@@ -1,0 +1,39 @@
+Dependencies for Project 'GXX_Lab1', Target 'GXX_Lab1': (DO NOT MODIFY !)
+F (.\src\main.c)(0x5BA146E8)(-c --cpu Cortex-M4.fp -D__EVAL --li -g -O0 --apcs=interwork --split_sections -I./inc-I C:\Users\yxiong5\ECSE444\GXX_Lab1\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\Device\ARM\ARMCM4\Include-D__UVISION_VERSION="515" -D_RTE_ -DARMCM4_FP -DARM_MATH_CM4 -D__FPU_PRESENT-o .\objects\main.o --omf_browse .\objects\main.crf --depend .\objects\main.d)
+I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x54C326B8)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include\arm_math.h)(0x5A8F00E2)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include\core_cm4.h)(0x5A8F00E2)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x54C326B8)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_version.h)(0x5A5676E2)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_compiler.h)(0x5A8F00E2)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_armcc.h)(0x5A8F00E2)
+I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x54C326B8)
+I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x54C326B8)
+I (./inc/asm_max.h)(0x5B9D17D2)
+I (./inc/asm_dp.h)(0x5BA053DC)
+I (./inc/asm_var.h)(0x5BA05A22)
+F (.\asm\asm_max.s)(0x5B9D1D26)(--cpu Cortex-M4.fp --li --pd "__EVAL SETA 1" -g --apcs=interwork -I C:\Users\yxiong5\ECSE444\GXX_Lab1\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\Device\ARM\ARMCM4\Include--pd "__UVISION_VERSION SETA 515" --pd "_RTE_ SETA 1" --pd "ARMCM4_FP SETA 1"--list .\listings\asm_max.lst --xref -o .\objects\asm_max.o --depend .\objects\asm_max.d)
+F (.\asm\asm_dp.s)(0x5BA06BF2)(--cpu Cortex-M4.fp --li --pd "__EVAL SETA 1" -g --apcs=interwork -I C:\Users\yxiong5\ECSE444\GXX_Lab1\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\Device\ARM\ARMCM4\Include--pd "__UVISION_VERSION SETA 515" --pd "_RTE_ SETA 1" --pd "ARMCM4_FP SETA 1"--list .\listings\asm_dp.lst --xref -o .\objects\asm_dp.o --depend .\objects\asm_dp.d)
+F (.\asm\asm_var.s)(0x5BA06B72)(--cpu Cortex-M4.fp --li --pd "__EVAL SETA 1" -g --apcs=interwork -I C:\Users\yxiong5\ECSE444\GXX_Lab1\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\Device\ARM\ARMCM4\Include--pd "__UVISION_VERSION SETA 515" --pd "_RTE_ SETA 1" --pd "ARMCM4_FP SETA 1"--list .\listings\asm_var.lst --xref -o .\objects\asm_var.o --depend .\objects\asm_var.d)
+F (.\inc\asm_dp.h)(0x5BA053DC)()
+F (.\inc\asm_max.h)(0x5B9D17D2)()
+F (.\inc\asm_var.h)(0x5BA05A22)()
+F (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Lib\ARM\arm_cortexM4lf_math.lib)(0x5A60FA28)()
+F (C:\Keil_v5\ARM\PACK\Keil\ARM_Compiler\1.4.0\Source\retarget_io.c)(0x584F0ABE)(-c --cpu Cortex-M4.fp -D__EVAL --li -g -O0 --apcs=interwork --split_sections -I./inc-I C:\Users\yxiong5\ECSE444\GXX_Lab1\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\Device\ARM\ARMCM4\Include-D__UVISION_VERSION="515" -D_RTE_ -DARMCM4_FP -DARM_MATH_CM4 -D__FPU_PRESENT-o .\objects\retarget_io.o --omf_browse .\objects\retarget_io.crf --depend .\objects\retarget_io.d)
+I (C:\Keil_v5\ARM\ARMCC\include\string.h)(0x54C326B8)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x54C326B8)
+I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x54C326B8)
+I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x54C326B8)
+I (C:\Keil_v5\ARM\ARMCC\include\assert.h)(0x54C326B8)
+I (C:\Keil_v5\ARM\ARMCC\include\rt_sys.h)(0x54C326B8)
+I (C:\Users\yxiong5\ECSE444\GXX_Lab1\RTE\RTE_Components.h)(0x5B9D0E4A)
+F (RTE\Device\ARMCM4_FP\startup_ARMCM4.s)(0x58AB6BFA)(--cpu Cortex-M4.fp --li --pd "__EVAL SETA 1" -g --apcs=interwork -I C:\Users\yxiong5\ECSE444\GXX_Lab1\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\Device\ARM\ARMCM4\Include--pd "__UVISION_VERSION SETA 515" --pd "_RTE_ SETA 1" --pd "ARMCM4_FP SETA 1"--list .\listings\startup_armcm4.lst --xref -o .\objects\startup_armcm4.o --depend .\objects\startup_armcm4.d)
+F (RTE\Device\ARMCM4_FP\system_ARMCM4.c)(0x5A8F00E2)(-c --cpu Cortex-M4.fp -D__EVAL --li -g -O0 --apcs=interwork --split_sections -I./inc-I C:\Users\yxiong5\ECSE444\GXX_Lab1\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\Device\ARM\ARMCM4\Include-D__UVISION_VERSION="515" -D_RTE_ -DARMCM4_FP -DARM_MATH_CM4 -D__FPU_PRESENT-o .\objects\system_armcm4.o --omf_browse .\objects\system_armcm4.crf --depend .\objects\system_armcm4.d)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\Device\ARM\ARMCM4\Include\ARMCM4_FP.h)(0x5A8F00E2)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include\core_cm4.h)(0x5A8F00E2)
+I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x54C326B8)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_version.h)(0x5A5676E2)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_compiler.h)(0x5A8F00E2)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include\cmsis_armcc.h)(0x5A8F00E2)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include\mpu_armv7.h)(0x5A8F00E2)
+I (C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\Device\ARM\ARMCM4\Include\system_ARMCM4.h)(0x5A8F00E2)

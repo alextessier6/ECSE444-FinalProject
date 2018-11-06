@@ -1,0 +1,56 @@
+void StartSensor(void const * argument)
+{
+//	BSP_ACCELERO_Init();
+//	BSP_GYRO_Init();
+	BSP_HSENSOR_Init();
+//	BSP_MAGNETO_Init();
+	BSP_PSENSOR_Init();
+	BSP_TSENSOR_Init();
+	while(1){
+
+		switch(sensorIndex){
+			case 0:
+					BSP_ACCELERO_Init();
+					//BSP_GYRO_Init();
+				BSP_ACCELERO_AccGetXYZ(acc); // int *3
+					osDelay(200); //delay 200 ms-> 5Hz
+				BSP_ACCELERO_DeInit();
+					//BSP_GYRO_DeInit();
+			break;
+			case 1:
+				//BSP_ACCELERO_Init();
+					BSP_GYRO_Init();
+				BSP_GYRO_GetXYZ(gyro); // should be float * 3
+					osDelay(200); //delay 200 ms-> 5Hz
+				//BSP_ACCELERO_DeInit();
+					BSP_GYRO_DeInit();
+			break;
+			case 2:
+				// BSP_HSENSOR_Init();
+				humid=BSP_HSENSOR_ReadHumidity(); // float 
+					osDelay(200); //delay 200 ms-> 5Hz
+				//BSP_HSENSOR_DeInit(); // no deinit 
+			break;
+			case 3:
+				BSP_MAGNETO_Init();
+				BSP_MAGNETO_GetXYZ(mag);// int * 3
+					osDelay(200); //delay 200 ms-> 5Hz
+				BSP_MAGNETO_DeInit();
+			break;
+			case 4:
+				// BSP_PSENSOR_Init();
+				pressure = BSP_PSENSOR_ReadPressure(); // float 
+					osDelay(200); //delay 200 ms-> 5Hz
+				//BSP_PSENSOR_DeInit(); // no deinit
+			break;
+			case 5:
+				// BSP_TSENSOR_Init();
+				temp = BSP_TSENSOR_ReadTemp(); // float
+					osDelay(200); //delay 200 ms-> 5Hz
+				// BSP_TSENSOR_DeInit(); // no deinit
+			break;
+			default:
+				printf("Wrong Sensor Index: %d\n", sensorIndex);
+		}
+	}
+}

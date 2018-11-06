@@ -1,0 +1,130 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000                 AREA             test, CODE, READONLY
+    2 00000000         
+    3 00000000                 export           asm_max     ; label must be exp
+                                                            orted if it is to b
+                                                            e used as a functio
+                                                            n in C
+    4 00000000         asm_max
+    5 00000000         
+    6 00000000 B430            PUSH{R4,         R5}         ; saving context ac
+                                                            cording to calling 
+                                                            convention
+    7 00000002         
+    8 00000002 ED90 0A00       VLDR.f32         S0, [R0]    ; max = f[0] (regis
+                                                            ter S0 used for max
+                                                            )
+    9 00000006 F04F 0400       MOV              R4, #0      ; max_index = 0 (re
+                                                            gister R4 used for 
+                                                            max_idx)
+   10 0000000A         loop
+   11 0000000A 1E49            SUBS             R1, R1, #1  ; loop counter (N =
+                                                             N-1)
+   12 0000000C DB0C            BLT              done        ; loop has finished
+                                                            ?
+   13 0000000E EB00 0581       ADD              R5, R0, R1, LSL #2 ; creating b
+                                                            ase address for the
+                                                             next element in th
+                                                            e array
+   14 00000012 EDD5 0A00       VLDR.f32         S1, [R5]    ; load next element
+                                                             into S1
+   15 00000016 EEB4 0A60       VCMP.f32         S0, S1      ; compare element w
+                                                            ith current max
+   16 0000001A EEF1 FA10       VMRS             APSR_nzcv, FPSCR ; need to move
+                                                             the FPU status reg
+                                                            ister to achive flo
+                                                            ating point conditi
+                                                            onal execution
+   17 0000001E DC02            BGT              continue    ; if the current ma
+                                                            x is greater or equ
+                                                            al to new element, 
+                                                            no need to update, 
+                                                            continue
+   18 00000020 EEB0 0A60       VMOV.f32         S0, S1      ; if not, then upda
+                                                            te current max
+   19 00000024 460C            MOV              R4, R1      ; also update max i
+                                                            ndex
+   20 00000026         
+   21 00000026         continue
+   22 00000026 E7F0            B                loop        ; loop
+   23 00000028         
+   24 00000028         done
+   25 00000028 ED82 0A00       VSTR.f32         S0, [R2]    ; store the max val
+                                                            ue in the pointer (
+                                                            float *max) that wa
+                                                            s provided
+   26 0000002C 601C            STR              R4, [R3]    ; store the index o
+                                                            f the max value in 
+                                                            the pointer (int *m
+                                                            ax_idx) that was pr
+                                                            ovided
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+   27 0000002E         
+   28 0000002E BC30            POP{R4,          R5}         ; restore context
+   29 00000030 4770            BX               LR          ; return
+   30 00000032         
+   31 00000032                 END
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4.fp --apcs=int
+erwork --depend=.\objects\asm_max.d -o.\objects\asm_max.o -IC:\Users\yxiong5\EC
+SE444\GXX_Lab1\RTE -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.3.0\CMSIS\Include -IC:\Kei
+l_v5\ARM\PACK\ARM\CMSIS\5.3.0\Device\ARM\ARMCM4\Include --predefine="__EVAL SET
+A 1" --predefine="__UVISION_VERSION SETA 515" --predefine="_RTE_ SETA 1" --pred
+efine="ARMCM4_FP SETA 1" --list=.\listings\asm_max.lst asm\asm_max.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+asm_max 00000000
+
+Symbol: asm_max
+   Definitions
+      At line 4 in file asm\asm_max.s
+   Uses
+      At line 3 in file asm\asm_max.s
+Comment: asm_max used once
+continue 00000026
+
+Symbol: continue
+   Definitions
+      At line 21 in file asm\asm_max.s
+   Uses
+      At line 17 in file asm\asm_max.s
+Comment: continue used once
+done 00000028
+
+Symbol: done
+   Definitions
+      At line 24 in file asm\asm_max.s
+   Uses
+      At line 12 in file asm\asm_max.s
+Comment: done used once
+loop 0000000A
+
+Symbol: loop
+   Definitions
+      At line 10 in file asm\asm_max.s
+   Uses
+      At line 22 in file asm\asm_max.s
+Comment: loop used once
+test 00000000
+
+Symbol: test
+   Definitions
+      At line 1 in file asm\asm_max.s
+   Uses
+      None
+Comment: test unused
+5 symbols
+340 symbols in table
