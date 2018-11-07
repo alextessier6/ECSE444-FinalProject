@@ -464,6 +464,38 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+/**
+* moving average 
+*/
+
+void sma_c(float *sign, float *signFilt, int N, int D){
+	
+		int n;
+		int i;
+		float sum = 0;
+		for(n=0; n<=N; n++){
+			sum = 0;
+			// D/2 before, (D/2)- after
+			if(D%2==0){
+				for(i=(n-D/2); i<=(n+((D/2)-1)); i++){
+					if (i>=0&&i<=N){
+						sum += sign[i];
+					}
+				}
+			}
+			
+			if(D%2!=0){
+				for(i=(n-D/2); i<=(n+((D/2))); i++){
+					if (i>=0&&i<=N){
+						sum += sign[i];
+					}
+				}
+			}
+			signFilt[n]=sum/D;
+		}
+}
+
+
 /* USER CODE END 4 */
 
 /* StartDefaultTask function */
