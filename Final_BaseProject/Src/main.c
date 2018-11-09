@@ -72,6 +72,7 @@ osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 float M_PI  = 3.1415926;
+float e = 2.718281828459045235360;
 int systick_flag = 0;
 int tim3_flag = 0;
 int SAMPLE_SIZE = 32000;
@@ -116,19 +117,63 @@ int fgetc(FILE *f) {
   */
 float test;
 float test1;
+
 float32_t s_array[2];
 float32_t x_array[2];
 float32_t a_array[4] = {1,0,
 												0,1};
+float32_t w_array[2] = {3, 6}; //Initialized to "random value"
+float32_t W_array[4];
+float32_t wLast_array[2];
+float32_t wj_array[2];
+float32_t wT_array[2];
+float32_t E1_array[2];
+float32_t E2_array[2];															
+														
+float32_t u_array[1];															
+													
+
+//W = 2x2 weight matrix, used to find A, initialized with 3 6 / 6 3
+float k = 0;
+float delta = 1;
+float conv = 1e-5; //convergence criteria
+int maxIt = 100; //Max number of iterations
+float g;
+float g_exp;
+float w_magn;
+float gp;
+float gp_cnst = 1;
+float32_t dotProd;
+	
 int main(void)
 {
   /* USER CODE BEGIN 1 */
 	arm_matrix_instance_f32 A;
 	arm_matrix_instance_f32 s_m;
 	arm_matrix_instance_f32 x_m;
+	arm_matrix_instance_f32 W;
+	arm_matrix_instance_f32 w;
+	arm_matrix_instance_f32 wLast;
+	arm_matrix_instance_f32 wT;
+	arm_matrix_instance_f32 wj; //temp
+	arm_matrix_instance_f32 u;
+	arm_matrix_instance_f32 E1;
+	arm_matrix_instance_f32 E2;
+	
 	arm_mat_init_f32(&s_m,2,1,s_array);
 	arm_mat_init_f32(&x_m,2,1,x_array);
 	arm_mat_init_f32(&A,2,2,a_array);
+	
+	arm_mat_init_f32(&w,2,1,w_array);
+	arm_mat_init_f32(&wLast,2,1,wLast_array);
+	arm_mat_init_f32(&wj,2,1,wj_array);
+
+	arm_mat_init_f32(&W,2,2,W_array);
+	
+	arm_mat_init_f32(&u,1,1,u_array);
+	arm_mat_init_f32(&E1,2,1,E1_array);
+	arm_mat_init_f32(&E2,2,1,E2_array);
+
 	
   /* USER CODE END 1 */
 
@@ -202,7 +247,6 @@ int main(void)
 //	test = arm_sin_f32(M_PI/2);
 //	test1 = arm_sin_f32(5 * M_PI/2);
 
-	
 	for (int t = 0; t < SAMPLE_SIZE; t ++ ){
 		float x = 2 * M_PI * t / SAMPLE_FREQ;
 		s_array[0] = arm_sin_f32((float) x*f1) * 512 + 512;
@@ -214,17 +258,104 @@ int main(void)
 		BSP_QSPI_Write((uint8_t *)&x_array[0], t*0x100, 8); 
 		//  1 sample from 2 channels in one page 
 	}
-
+	
+	
+	//fastICA
+	for(int i = 0; i < 2; i++){
+		while(fabs(delta) > conv && k < maxIt){
+			k++;
+			
+			wLast_array[0] = w_array[0];
+			wLast_array[1] = w_array[1];
+			
+			E1_array[0] = 0;
+			E1_array[1] = 0;
+			E2_array[0] = 0;
+			E2_array[1] = 0;				
+			
+			// read all x and calculate average
+			for(int j = 0; j < SAMPLE_SIZE; j++){//
+				float temp_array[2];//
+				arm_matrix_instance_f32 temp;//
+				arm_mat_init_f32(&temp,2,1,temp_array);//
+				
+				BSP_QSPI_Read((uint8_t *)&x_array[0], j*0x100, 8); //
+							
+			/* u = wT * x (u is a scalar) */
+			arm_mat_trans_f32(&w, &wT);
+			arm_mat_mult_f32(&wT, &x_m, &u);
+			
+			/* g_exp = e^( - 0.5 * u^2) */
+			g_exp = u_array[0]* u_array[0] * -0.5;
+			g_exp = pow(e, g_exp);
+			g = u_array[0] * g_exp;
+			
+			/* gp_const = 1 - u^2 */
+			gp_cnst = 1 - u_array[0]* u_array[0];
+			gp = gp_cnst * g_exp;
+			
+			arm_mat_scale_f32(&x_m, g, &temp);//
+			arm_mat_add_f32(&temp,&E1,&E1);//
+			
+			arm_mat_scale_f32(&w, gp, &temp);//
+			arm_mat_add_f32(&temp,&E2,&E2);//
+			
+				}//
+				arm_mat_scale_f32(&E1,(float)1/SAMPLE_SIZE,&E1);//
+				arm_mat_scale_f32(&E2,(float)1/SAMPLE_SIZE,&E2);//
+//			arm_mat_scale_f32(&x_m, g, &E1);
+//			arm_mat_scale_f32(&w, gp, &E2);
+			arm_mat_sub_f32(&E1, &E2, &w);
+			
+			/* w = w - wT*wLast*wLast */
+			if(i > 0){
+				arm_mat_trans_f32(&w, &wT);
+				arm_mat_mult_f32(&wT, &wLast, &u);
+				arm_mat_scale_f32(&wLast, u_array[0], &wj);
+				arm_mat_sub_f32(&w, &wj, &w);
+			}
+			
+			/* w = w/|w| */
+			w_magn = sqrt(pow(w_array[0], 2) + pow(w_array[1], 2));
+			arm_mat_scale_f32(&w, 1/w_magn, &w);
+			
+			/* delta = 1 - abs(dot(w,wLast)) // dot(w,wLast) = 1 when 2 = wLast // */
+			arm_dot_prod_f32(&w_array[0], &wLast_array[0], 2, &dotProd);
+			delta = 1 - fabs(dotProd);
+			
+		}
+		
+		// form bigger W matrix with wp's (column vectors)
+		W_array[2 * i] = w_array[0];
+		W_array[2 * i + 1] = w_array[1];
+		
+	}
+			
+	//**Overwrites W by W transpose**
+	arm_mat_trans_f32(&W, &W);
+	
+	// s = wT * x;
+	for (int t = 0; t < SAMPLE_SIZE; t ++ ){
+		BSP_QSPI_Read((uint8_t *)&x_array[0], t*0x100, 8); 
+		
+		arm_mat_mult_f32(&W, &x_m, &s_m);
+		
+		BSP_QSPI_Write((uint8_t *)&s_array[0], t*0x100, 8); 
+		//  1 sample from 2 channels in one page 
+	}
+	
+	
+	//Reads the stored samples
 	int i = 0;
 	while (1)
   {
-  /* USER CODE END WHILE */
-  /* USER CODE BEGIN 3 */
 		if (systick_flag){
-//			float x = 2 * M_PI * i / SAMPLE_FREQ;
+			//float x = 2 * M_PI * i / SAMPLE_FREQ;
+			//s1 = arm_sin_f32((float) x * f1) * 512 + 512;
+			//s2 = arm_sin_f32((float) x * f2) * 512 + 512;
+			//HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)x_array[0]);
+			//HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)x_array[1]);
 			systick_flag = 0;
-//			s1 = arm_sin_f32((float) x * f1) * 512 + 512;
-//			s2 = arm_sin_f32((float) x * f2) * 512 + 512;
 			BSP_QSPI_Read((uint8_t *)&x_array[0], i*0x100, 8); 
 			HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)x_array[0]);
 			HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)x_array[1]);
@@ -235,7 +366,8 @@ int main(void)
 			}
 		}
   }
-  /* USER CODE END 3 */
+	
+	
 }
 
 /**
