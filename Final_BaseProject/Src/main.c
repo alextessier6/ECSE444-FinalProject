@@ -122,9 +122,9 @@ float test1;
 
 float32_t s_array[2];
 float32_t x_array[2];
-float32_t a_array[4] = {0.75,0.5,
-												0.5,0.75};
-float32_t w_array[2] = {0.25, 0.75}; //Initialized to "random value"
+float32_t a_array[4] = {1,2,
+												2,1};
+float32_t w_array[2] = {3, 6}; //Initialized to "random value"
 float32_t W_array[4];
 float32_t WT_array[4];
 float32_t wLast_array[2];
@@ -220,7 +220,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 	HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
-	//BSP_QSPI_Erase_Chip();
+	// BSP_QSPI_Erase_Chip();
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -268,7 +268,7 @@ int main(void)
 //		BSP_QSPI_Erase_Sector(t);
 //	}
 
-	//BSP_QSPI_Erase_Chip();
+	BSP_QSPI_Erase_Chip();
 
 	for(int t = 0; t < SAMPLE_SIZE; t++){
 		float x = 2 * M_PI * t / SAMPLE_FREQ;
@@ -296,6 +296,15 @@ int main(void)
 			//wLast_array[0] = w_array[0];
 			//wLast_array[1] = w_array[1];
 							
+			// read all x and calculate average
+			float gp_sum = 0;
+			for(int j = 0; j < SAMPLE_SIZE; j++){//
+				float temp_array[2];//
+				arm_matrix_instance_f32 temp;//
+				arm_mat_init_f32(&temp,2,1,temp_array);//
+				
+				BSP_QSPI_Read((uint8_t *)&x_array[0], j*0x100, 8); //
+				
 			/* u = wT * x (u is a scalar) */
 			arm_mat_trans_f32(&w, &wT);
 			arm_mat_mult_f32(&wT, &x_m, &u);
@@ -312,8 +321,20 @@ int main(void)
 			g = tanh(u_array[0]);
 			gp = 1 - (tanh(u_array[0]) * tanh(u_array[0]));
 			
-			arm_mat_scale_f32(&x_m, g, &E1);
-			arm_mat_scale_f32(&w, gp, &E2);
+			arm_mat_scale_f32(&x_m, g, &temp);//
+			arm_mat_add_f32(&temp,&E1,&E1);//
+
+			gp_sum += gp;//
+
+			
+				}//
+				arm_mat_scale_f32(&E1,(float)1/SAMPLE_SIZE,&E1);//
+				gp_sum /= gp_sum / SAMPLE_SIZE;
+
+				arm_mat_scale_f32(&w, gp_sum, &E2);//
+				
+//			arm_mat_scale_f32(&x_m, g, &E1);
+//			arm_mat_scale_f32(&w, gp, &E2);
 			arm_mat_sub_f32(&E1, &E2, &w);
 			
 			/* w = w - wT*wLast*wLast */
@@ -347,7 +368,9 @@ int main(void)
 			arm_mat_sub_f32(&w, &wLast, &temp);
 			delta = sqrt(pow(temp_array[0], 2) + pow(temp_array[1], 2));
 		}
+		// rest k 
 		k = 0;
+		
 		// form bigger W matrix with wp's (column vectors)
 		W_array[i] = w_array[0];
 		W_array[i + 2] = w_array[1];
@@ -356,6 +379,8 @@ int main(void)
 			wLast_array[0] = w_array[0];
 			wLast_array[1] = w_array[1];
 		}
+		
+		// reset random w and delta 
 		w_array[0] = 10; 
 		w_array[1] = 36; 
 		delta = 1;
