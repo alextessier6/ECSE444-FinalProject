@@ -120,27 +120,28 @@ int fgetc(FILE *f) {
 float test;
 float test1;
 
-float32_t s_array[2];
-float32_t x_array[2];
 float32_t a_array[4] = {1,2,
 												2,1};
-float32_t w_array[2] = {0.3, 0.6}; //Initialized to "random value"
+float32_t s_array[2];
+float32_t x_array[2];
 float32_t W_array[4];
 float32_t WT_array[4];
+float32_t w_array[2] = {0.3, 0.6}; //Initialized to "random value"
 float32_t wLast_array[2];
-float32_t wj_array[2];
 float32_t wT_array[2];
+float32_t wj_array[2];
+float32_t u_array[1];		
 float32_t E1_array[2];
 float32_t E2_array[2];															
 														
-float32_t u_array[1];															
+													
 													
 
 //W = 2x2 weight matrix, used to find A, initialized with 3 6 / 6 3
 int k = 0;
 float delta = 1000;
 float conv = 1e-7; //convergence criteria
-int maxIt = 100; //Max number of iterations
+int maxIt = 10; //Max number of iterations
 float g;
 float g_exp;
 float w_magn;
@@ -162,31 +163,27 @@ int main(void)
 	arm_matrix_instance_f32 s_m;
 	arm_matrix_instance_f32 x_m;
 	arm_matrix_instance_f32 W;
+	arm_matrix_instance_f32 WT;
 	arm_matrix_instance_f32 w;
 	arm_matrix_instance_f32 wLast;
 	arm_matrix_instance_f32 wT;
-	arm_matrix_instance_f32 WT;
 	arm_matrix_instance_f32 wj; //temp
 	arm_matrix_instance_f32 u;
 	arm_matrix_instance_f32 E1;
 	arm_matrix_instance_f32 E2;
 	
+	arm_mat_init_f32(&A,2,2,a_array);
 	arm_mat_init_f32(&s_m,2,1,s_array);
 	arm_mat_init_f32(&x_m,2,1,x_array);
-	arm_mat_init_f32(&A,2,2,a_array);
-	
-	arm_mat_init_f32(&w,2,1,w_array);
-	arm_mat_init_f32(&wT,1,2,wT_array);
-	arm_mat_init_f32(&wLast,2,1,wLast_array);
-	arm_mat_init_f32(&wj,2,1,wj_array);
-
 	arm_mat_init_f32(&W,2,2,W_array);
 	arm_mat_init_f32(&WT,2,2,WT_array);
-	
+	arm_mat_init_f32(&w,2,1,w_array);
+	arm_mat_init_f32(&wLast,2,1,wLast_array);
+	arm_mat_init_f32(&wT,1,2,wT_array);
+	arm_mat_init_f32(&wj,2,1,wj_array);
 	arm_mat_init_f32(&u,1,1,u_array);
 	arm_mat_init_f32(&E1,2,1,E1_array);
 	arm_mat_init_f32(&E2,2,1,E2_array);
-	
 	
 	float32_t wjLast_array[2];//
 	arm_matrix_instance_f32 wjLast;//
@@ -196,7 +193,6 @@ int main(void)
 	arm_matrix_instance_f32 temp;//
 	arm_mat_init_f32(&temp,2,1,temp_array);//
 
-	
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -272,7 +268,7 @@ int main(void)
 //		BSP_QSPI_Erase_Sector(t);
 //	}
 
-	// BSP_QSPI_Erase_Chip();
+	BSP_QSPI_Erase_Chip();
 
 	for(int t = 0; t < SAMPLE_SIZE; t++){
 		float x = 2 * M_PI * t / SAMPLE_FREQ;
@@ -302,14 +298,12 @@ int main(void)
 		while(fabs(delta) > conv && k < maxIt){
 			k++;
 			
-			wLast_array[0] = w_array[0];
-			wLast_array[1] = w_array[1];
+
 			
 			// reset sums 
 			E1_array[0] = 0;
 			E1_array[1] = 0;
 			E2_array[0] = 0;
-			
 			E2_array[1] = 0;
 			gp_sum = 0;
 			
@@ -348,14 +342,14 @@ int main(void)
 				arm_mat_init_f32(&w1,2,1,w1_array);
 				
 				w1_array[0] = W_array[0];
-				w1_array[1] = W_array[1];
+				w1_array[1] = W_array[2];
 				
 				arm_mat_trans_f32(&w, &wT);
 				arm_mat_mult_f32(&wT, &w1, &u);
 				arm_mat_scale_f32(&w1, u_array[0], &wj);
 				arm_mat_sub_f32(&w, &wj, &w);
 			}
-//			
+			
 //----------------------------------------------
 
 			/* w = w/|w| */
@@ -365,10 +359,13 @@ int main(void)
 			/* delta = 1 - abs(dot(w,wLast)) // dot(w,wLast) = 1 when 2 = wLast // */
 //			arm_dot_prod_f32(&w_array[0], &wLast_array[0], 2, &dotProd);
 //			delta = 1 - fabs(dotProd);
-			if (k > 1){
+			//if (k > 1){
 				arm_mat_sub_f32(&w, &wLast, &temp);
 				delta = sqrt(pow(temp_array[0], 2) + pow(temp_array[1], 2));
-			}
+			//}
+			wLast_array[0] = w_array[0];
+			wLast_array[1] = w_array[1];
+			
 		}
 
 		// form bigger W matrix with wp's (column vectors)
