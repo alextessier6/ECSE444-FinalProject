@@ -92,7 +92,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_DFSDM1_Init(void);
 static void MX_DAC1_Init(void);
 void StartDefaultTask(void const * argument);
-void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB);
+int eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB);
 void cov(float32_t *x_array, float32_t *cov_array);
 
 
@@ -129,20 +129,15 @@ float32_t WT_array[4];
 float32_t w_array[2] = {0.3, 0.6}; //Initialized to "random value"
 float32_t wLast_array[2];
 float32_t wT_array[2];
-float32_t wj_array[2];
-float32_t u_array[1];
-float32_t E1_array[2];
-float32_t E2_array[2];
 
 
 
 
 //W = 2x2 weight matrix, used to find A, initialized with 3 6 / 6 3
 int k = 0;
-float delta = 1000;
 float conv = 1e-7; //convergence criteria
 int maxIt = 10; //Max number of iterations
-
+float w_magn = 0; // w magnitude 
 
 
 float32_t dotProd;
@@ -156,7 +151,11 @@ int main(void)
 												  2,1};
 	arm_matrix_instance_f32 A;
 	arm_mat_init_f32(&A,2,2,a_array);
-
+													
+	float32_t adwt_array[4];
+	arm_matrix_instance_f32 Adwt;
+	arm_mat_init_f32(&Adwt,2,2,a_array);
+													
 	float32_t s_array[3200];
 	arm_matrix_instance_f32 s_m;
 	arm_mat_init_f32(&s_m,2,1600,s_array);
@@ -164,6 +163,10 @@ int main(void)
 	float32_t x_array[3200];
 	arm_matrix_instance_f32 x_m;
 	arm_mat_init_f32(&x_m,2,1600,x_array);
+													
+	float32_t xT_array[3200];
+	arm_matrix_instance_f32 xT_m;
+	arm_mat_init_f32(&xT_m,2,1600,xT_array);
 
   float32_t cov_array[4];
   arm_matrix_instance_f32 cov_m;
@@ -192,7 +195,45 @@ int main(void)
 	float32_t dewhitening_array[3200];
 	arm_matrix_instance_f32 dewhitening_m;
   arm_mat_init_f32(&dewhitening_m,2,2,dewhitening_array);
+	
+	float32_t B_array[4];
+	arm_matrix_instance_f32 B_m;
+  arm_mat_init_f32(&B_m,2,2,B_array);
 
+	float32_t BT_array[4];
+	arm_matrix_instance_f32 BT_m;
+  arm_mat_init_f32(&BT_m,2,2,BT_array);
+	
+	float32_t temp_m_array[4];
+	arm_matrix_instance_f32 temp_m;
+  arm_mat_init_f32(&temp_m,2,2,temp_m_array);
+	
+	float32_t temp_v_array[2];
+	arm_matrix_instance_f32 temp_v;
+  arm_mat_init_f32(&temp_m,2,1,temp_v_array);
+	
+	float32_t temp_v_3200_array[3200];
+	arm_matrix_instance_f32 temp_v_3200;
+	arm_mat_init_f32(&temp_v_3200,3200,1,temp_v_3200_array);
+	
+	arm_matrix_instance_f32 w;
+  arm_mat_init_f32(&w,2,1,w_array);
+	
+	arm_matrix_instance_f32 wT;
+  arm_mat_init_f32(&wT,2,1,wT_array);
+	
+	arm_matrix_instance_f32 W;
+  arm_mat_init_f32(&W,2,2,W_array);
+	
+	arm_matrix_instance_f32 WT;
+  arm_mat_init_f32(&WT,2,2,WT_array);
+	
+	float32_t A_array[4];
+	arm_matrix_instance_f32 A_m;
+  arm_mat_init_f32(&A_m,2,2,A_array);
+	
+	
+	
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -284,10 +325,10 @@ int main(void)
 
 	/*****computing cov and eig (pcamat)*****/
   //Finds the covariance matrix
-  cov(&x_array, &cov_array);
+  cov(&x_array[0], &cov_array[0]);
 
   //Computes the eigenvalues and eigenvectors of the covariance matrix
-  eig_mat_f32(&cov_array, &eigenVal_array , &eigenVect_array);
+  eig_mat_f32(&cov_array[0], &eigenVal_array[0] , &eigenVect_array[0]);
 
   //in matlab, D = eigenvalues  and E = eigenvectors
 
@@ -296,7 +337,7 @@ int main(void)
 	for(int i = 0; i< 4; i++){
 		whitening_array[i] = sqrt(eigenVal_array[i]);								// sqrt(D) ** saving sqrt(D) temporarily into whitening_m
 	}
-	arm_mat_mul_f32(&eigenVect_m, &eigenVal_m, &dewhitening_m); 	// dewhitening_m = E * sqrt(D)
+	arm_mat_mult_f32(&eigenVect_m, &eigenVal_m, &dewhitening_m); 	// dewhitening_m = E * sqrt(D)
 	arm_mat_inverse_f32	(&whitening_m, &whitening_m); 						// inv(sqrt(D))
 	arm_mat_trans_f32(&eigenVect_m,&eigenVectT_m); 								// E'
 	arm_mat_mult_f32(&whitening_m, &eigenVectT_m, &whitening_m);	// whitening_m = inv(sqrt(D)) * E'
@@ -307,128 +348,93 @@ int main(void)
 
 
 	/****FastICA***/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	//fastICA
 	for(int i = 0; i < 2; i++){
-
-		// reset delta
-		delta = 1000;
-		// reset k
-		k = 0;
-
-		//while (k < maxIt){
-		while(fabs(delta) > conv && k < maxIt){
-			k++;
-
-
-
-			// reset sums
-			E1_array[0] = 0;
-			E1_array[1] = 0;
-			E2_array[0] = 0;
-			E2_array[1] = 0;
-			gp_sum = 0;
-
-			// read all x and calculate average
-			for(j = 0; j < SAMPLE_SIZE; j++){
-//				float temp_array[2];
-//				arm_matrix_instance_f32 temp;
-//				arm_mat_init_f32(&temp,2,1,temp_array);
-				BSP_QSPI_Read((uint8_t *)&x_array[0], j*0x100, 8);
-
-				/* u = wT * x (u is a scalar) */
-				arm_mat_trans_f32(&w, &wT);
-				arm_mat_mult_f32(&wT, &x_m, &u);
-
-				g = tanh(u_array[0]);
-				gp = 1 - (tanh(u_array[0]) * tanh(u_array[0]));
-
-				arm_mat_scale_f32(&x_m, g, &temp);
-				arm_mat_add_f32(&temp,&E1,&E1);
-
-				gp_sum += gp;
-
-			}
-
-			arm_mat_scale_f32(&E1,(float)1/SAMPLE_SIZE,&E1);
-			gp_sum = gp_sum / (float)SAMPLE_SIZE;
-
-			arm_mat_scale_f32(&w, gp_sum, &E2);
-
-			arm_mat_sub_f32(&E1, &E2, &w);
-
-//------------------------------------------
-			if(i == 1){
-				arm_matrix_instance_f32 w1;
-				float32_t w1_array[2];
-				arm_mat_init_f32(&w1,2,1,w1_array);
-
-				w1_array[0] = W_array[0];
-				w1_array[1] = W_array[2];
-
-				arm_mat_trans_f32(&w, &wT);
-				arm_mat_mult_f32(&wT, &w1, &u);
-				arm_mat_scale_f32(&w1, u_array[0], &wj);
-				arm_mat_sub_f32(&w, &wj, &w);
-			}
-
-//----------------------------------------------
-
-			/* w = w/|w| */
-			w_magn = sqrt(pow(w_array[0], 2) + pow(w_array[1], 2));
+	// w_array initialised to be {0.3, 0.6}; 
+		
+		// Take a random initial vector of length 1 and orthogonalise it
+		// with respect to the other vectors 
+		arm_mat_trans_f32(&B_m,&BT_m);
+		arm_mat_mult_f32(&B_m, &BT_m, &temp_m);
+		arm_mat_mult_f32(&temp_m, &w, &temp_v);
+		arm_mat_sub_f32(&w,&temp_v,&w);
+		w_magn = sqrt(pow(w_array[0],2) + pow(w_array[1],2));
+		arm_mat_scale_f32(&w, 1/w_magn, &w);
+		
+		// 
+		wLast_array[0] = 0;
+		wLast_array[1] = 0;
+		
+		
+		while(k < maxIt){
+			
+			// Project the vector into the space orthogonal to the space 
+			// spanned by the earlier found basis vectors.
+			arm_mat_trans_f32(&B_m,&BT_m);
+			arm_mat_mult_f32(&B_m, &BT_m, &temp_m);
+			arm_mat_mult_f32(&temp_m, &w, &temp_v);
+			arm_mat_sub_f32(&w,&temp_v,&w);
+			
+			// w = w / norm(w)
+			w_magn = sqrt(pow(w_array[0],2) + pow(w_array[1],2));
 			arm_mat_scale_f32(&w, 1/w_magn, &w);
-
-			/* delta = 1 - abs(dot(w,wLast)) // dot(w,wLast) = 1 when 2 = wLast // */
-//			arm_dot_prod_f32(&w_array[0], &wLast_array[0], 2, &dotProd);
-//			delta = 1 - fabs(dotProd);
-			//if (k > 1){
-				arm_mat_sub_f32(&w, &wLast, &temp);
-				delta = sqrt(pow(temp_array[0], 2) + pow(temp_array[1], 2));
-			//}
+			
+			float diff[2], sum[2];
+			arm_sub_f32(&w_array[0], &w_array[1],&diff[0],2);
+			arm_add_f32(&w_array[0], &w_array[1],&sum[1],2);
+			if(sqrt(pow(diff[0],2) + pow(diff[1],2)) < conv ||
+						sqrt(pow(sum[0],2) + pow(sum[1],2)) < conv){
+						
+							// Saving the vector 
+							// B(:,i) = w 
+							B_array[i] = w_array[0];
+							B_array[i + 2] = w_array[1];
+						
+							// Calculate the dewhitened vector 
+							// A(:,i) = dewhiteningM * w
+							arm_mat_mult_f32(&dewhitening_m, &w, &temp_v);
+							Adwt_array[i] = temp_v_array[0];
+							Adwt_array[i + 2] = temp_v_array[1];
+							
+							// Calculate ICA filter
+							arm_mat_trans_f32(&w, &wT);
+							arm_mat_mult_f32(&wT, &whitening_m, &temp_v);
+							W_array[i] =  temp_v_array[0];
+							W_array[i + 2] =  temp_v_array[1];
+							
+							break;
+			}
 			wLast_array[0] = w_array[0];
 			wLast_array[1] = w_array[1];
-
+			
+			// pow3
+			arm_mat_trans_f32(&x_m, &xT_m);
+			arm_mat_mult_f32(&x_m, &w, &temp_v_3200);
+			for(int j = 0; j < 3200; j++){
+				temp_v_3200_array[j] = pow(temp_v_3200_array[j],3);		
+			}
+			arm_mat_mult_f32(&x_m, &temp_v_3200, &temp_v);
+			arm_mat_scale_f32(&temp_v, 1/SAMPLE_SIZE, &temp_v); // (X * ((X' * w).^3)) / #samples 
+			
+			arm_mat_scale_f32(&w, 3, &w); // save 3*w directly into w
+			
+			arm_mat_sub_f32(&temp_v, &w, &w);
+			
+			// w = w / norm(w)
+			w_magn = sqrt(pow(w_array[0],2) + pow(w_array[1],2));
+			arm_mat_scale_f32(&w, 1/w_magn, &w);
+			k++; 
 		}
-
-		// form bigger W matrix with wp's (column vectors)
-		W_array[i] = w_array[0];
-		W_array[i + 2] = w_array[1];
-
-		//------------------------------------
-//		if(i == 0){
-//			wLast_array[0] = w_array[0];
-//			wLast_array[1] = w_array[1];
-//		}
-		//------------------------------------
-
 		// reset random w
 		w_array[0] = 0.5;
 		w_array[1] = 0.6;
-
 	}
 
 	arm_mat_trans_f32(&W, &WT);
 
 	// s = WT * x;
 	for (int t = 0; t < SAMPLE_SIZE; t ++ ){
-		BSP_QSPI_Read((uint8_t *)&x_array[0], t*0x100, 8);
-
 		arm_mat_mult_f32(&WT, &x_m, &s_m);
-		BSP_QSPI_Write((uint8_t *)&s_array[0], t*0x100, 8);
+		// BSP_QSPI_Write((uint8_t *)&s_array[0], t*0x100, 8);
 		//  1 sample from 2 channels in one page
 	}
 
@@ -443,9 +449,9 @@ int main(void)
 //			HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)s1);
 //			HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)s2);
 			systick_flag = 0;
-			BSP_QSPI_Read((uint8_t *)&x_array[0], i*0x100, 8);
-			HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)(x_array[0]*512 + 512));
-			HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)(x_array[1]*512 + 512));
+			// BSP_QSPI_Read((uint8_t *)&s_array[0], i*0x100, 8);
+			HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)(s_array[2*i]*512 + 512));
+			HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)(s_array[2*i+1]*512 + 512));
 			if(i == SAMPLE_SIZE){
 				i = 0;
 			}else{
@@ -495,7 +501,7 @@ void cov(float32_t *x_array, float32_t *cov_array){
 }
 
 //Takes a 2x2 matrix as input and computes the eigenvalues (stored in A) and eigenvectors (stored in B)
-void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
+int eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
     float32_t a = 1;
     float32_t b = - (pSrcA[0] + pSrcA[3]);
     float32_t det = pSrcA[0] * pSrcA[3] - pSrcA[1] * pSrcA[2];
@@ -503,7 +509,7 @@ void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
     float32_t eig1 = 0;
     float32_t eig2 = 0;
 
-    if(pow(b, 2) - 4 * a * c) >= 0){
+    if( ( pow(b, 2) - 4 * a * c) >= 0){
         eig1 = (-b + sqrt(pow(b, 2) - 4 * a * c))/(2*a);
         eig2 = (-b - sqrt(pow(b, 2) - 4 * a * c))/(2*a);
     }
