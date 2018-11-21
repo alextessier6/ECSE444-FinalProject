@@ -93,6 +93,8 @@ static void MX_DFSDM1_Init(void);
 static void MX_DAC1_Init(void);
 void StartDefaultTask(void const * argument);
 void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB);
+void cov(float32_t *x_array, float32_t *cov_array);
+
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -140,9 +142,7 @@ int k = 0;
 float delta = 1000;
 float conv = 1e-7; //convergence criteria
 int maxIt = 10; //Max number of iterations
-float meanX;
-float meanY;
-float covariance;
+
 
 
 float32_t dotProd;
@@ -266,43 +266,13 @@ int main(void)
 	//Mixes the signals
 	arm_mat_mult_f32(&A, &s_m, &x_m);
 
-	/*---------------Finds the covariance matrix------------------------*/
-
-  //Finds the mean of both columns
-  for(int t = 0; t < SAMPLE_SIZE; t++){
-    meanX += x_array[t];
-    meanY += x_array[SAMPLE_SIZE + t];
-  }
-
-  meanX = meanX / SAMPLE_SIZE;
-  meanY = meanY / SAMPLE_SIZE;
-
-  //Finds the covariance of 1-1
-  covariance = 0;
-  for(int t = 0; t < SAMPLE_SIZE; t++){
-    covariance += (x_array[t] - meanX) * (x_array[t] - meanX);
-  }
-  cov_array[0] = covariance / SAMPLE_SIZE;
-
-  //Finds the covariance of 1-2 (and 2-1)
-  covariance = 0;
-  for(int t = 0; t < SAMPLE_SIZE; t++){
-    covariance += (x_array[t] - meanX) * (x_array[t + SAMPLE_SIZE] - meanY);
-  }
-  cov_array[1] = covariance / SAMPLE_SIZE;
-  cov_array[2] = cov_array[1];
-
-  //Finds the covariance of 2-2
-  covariance = 0;
-  for(int t = 0; t < SAMPLE_SIZE; t++){
-    covariance += (x_array[t + SAMPLE_SIZE] - meanY) * (x_array[t + SAMPLE_SIZE] - meanY);
-  }
-  cov_array[3] = covariance / SAMPLE_SIZE;
-
-  /*------------------------------------------------------------------*/
+  //Finds the covariance matrix
+  cov(&x_array, &cov_array);
 
   //Computes the eigenvalues and eigenvectors of the covariance matrix
   eig_mat_f32(&cov_array, &eigenVal_array , &eigenVect_array);
+
+  //in matlab, D = eigenvalues  and E = eigenvectors
 
 
 
@@ -460,6 +430,42 @@ int main(void)
 
 }
 
+//Computes the covariance of the data matrix and outputs the covariance matrix
+void cov(float32_t *x_array, float32_t *cov_array){
+  float32_t meanX;
+  float32_t meanY;
+  float32_t covariance;
+  //Finds the mean of both columns
+  for(int t = 0; t < SAMPLE_SIZE; t++){
+    meanX += x_array[t];
+    meanY += x_array[SAMPLE_SIZE + t];
+  }
+
+  meanX = meanX / SAMPLE_SIZE;
+  meanY = meanY / SAMPLE_SIZE;
+
+  //Finds the covariance of 1-1
+  covariance = 0;
+  for(int t = 0; t < SAMPLE_SIZE; t++){
+    covariance += (x_array[t] - meanX) * (x_array[t] - meanX);
+  }
+  cov_array[0] = covariance / SAMPLE_SIZE;
+
+  //Finds the covariance of 1-2 (and 2-1)
+  covariance = 0;
+  for(int t = 0; t < SAMPLE_SIZE; t++){
+    covariance += (x_array[t] - meanX) * (x_array[t + SAMPLE_SIZE] - meanY);
+  }
+  cov_array[1] = covariance / SAMPLE_SIZE;
+  cov_array[2] = cov_array[1];
+
+  //Finds the covariance of 2-2
+  covariance = 0;
+  for(int t = 0; t < SAMPLE_SIZE; t++){
+    covariance += (x_array[t + SAMPLE_SIZE] - meanY) * (x_array[t + SAMPLE_SIZE] - meanY);
+  }
+  cov_array[3] = covariance / SAMPLE_SIZE;
+}
 
 //Takes a 2x2 matrix as input and computes the eigenvalues (stored in A) and eigenvectors (stored in B)
 void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
