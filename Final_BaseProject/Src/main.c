@@ -176,6 +176,22 @@ int main(void)
   float32_t eigenVect_array[4];
   arm_matrix_instance_f32 eigenVect_m;
   arm_mat_init_f32(&eigenVect_m,2,2,eigenVect_array);
+	
+	float32_t eigenVectT_array[4];
+  arm_matrix_instance_f32 eigenVectT_m;
+  arm_mat_init_f32(&eigenVectT_m,2,2,eigenVectT_array);
+	
+	float32_t whitesig_array[4];
+	arm_matrix_instance_f32 whitesig_m;
+  arm_mat_init_f32(&whitesig_m,2,2,whitesig_array);
+	
+	float32_t whitening_array[4];
+	arm_matrix_instance_f32 whitening_m;
+  arm_mat_init_f32(&whitening_m,2,2,whitening_array);
+	
+	float32_t dewhitening_array[3200];
+	arm_matrix_instance_f32 dewhitening_m;
+  arm_mat_init_f32(&dewhitening_m,2,2,dewhitening_array);
 
   /* USER CODE END 1 */
 
@@ -266,6 +282,7 @@ int main(void)
 	//Mixes the signals
 	arm_mat_mult_f32(&A, &s_m, &x_m);
 
+	/*****computing cov and eig (pcamat)*****/
   //Finds the covariance matrix
   cov(&x_array, &cov_array);
 
@@ -274,12 +291,22 @@ int main(void)
 
   //in matlab, D = eigenvalues  and E = eigenvectors
 
+	
+	/*****calculating whitening & dewhitening matricesa (whitenv)*****/
+	for(int i = 0; i< 4; i++){
+		whitening_array[i] = sqrt(eigenVal_array[i]);								// sqrt(D) ** saving sqrt(D) temporarily into whitening_m
+	}
+	arm_mat_mul_f32(&eigenVect_m, &eigenVal_m, &dewhitening_m); 	// dewhitening_m = E * sqrt(D)
+	arm_mat_inverse_f32	(&whitening_m, &whitening_m); 						// inv(sqrt(D))
+	arm_mat_trans_f32(&eigenVect_m,&eigenVectT_m); 								// E'
+	arm_mat_mult_f32(&whitening_m, &eigenVectT_m, &whitening_m);	// whitening_m = inv(sqrt(D)) * E'
+	
+  // Project to the eigenvectors of the covariance matrix.
+	// Whiten the samples and reduce dimension simultaneously 
+	arm_mat_mult_f32(&whitening_m, &x_m, &whitesig_m);
 
 
-
-
-
-
+	/****FastICA***/
 
 
 
