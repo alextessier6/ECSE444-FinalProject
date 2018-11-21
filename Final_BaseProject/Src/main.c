@@ -92,6 +92,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_DFSDM1_Init(void);
 static void MX_DAC1_Init(void);
 void StartDefaultTask(void const * argument);
+void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -141,6 +142,8 @@ float conv = 1e-7; //convergence criteria
 int maxIt = 10; //Max number of iterations
 float meanX;
 float meanY;
+float covariance;
+
 
 float32_t dotProd;
 
@@ -165,6 +168,14 @@ int main(void)
   float32_t cov_array[4];
   arm_matrix_instance_f32 cov_m;
   arm_mat_init_f32(&cov_m,2,2,cov_array);
+
+  float32_t eigenVal_array[4];
+  arm_matrix_instance_f32 eigenVal_m;
+  arm_mat_init_f32(&eigenVal_m,2,2,eigenVal_array);
+
+  float32_t eigenVect_array[4];
+  arm_matrix_instance_f32 eigenVect_m;
+  arm_mat_init_f32(&eigenVect_m,2,2,eigenVect_array);
 
   /* USER CODE END 1 */
 
@@ -248,45 +259,51 @@ int main(void)
 
 		//Generates the signal and stores in in SRAM
 		s_array[t] = arm_sin_f32((float) x*f1);
-		s_array[1600 + t] = arm_sin_f32((float) x*f2);
+		s_array[SAMPLE_SIZE + t] = arm_sin_f32((float) x*f2);
 
 	}
 
 	//Mixes the signals
 	arm_mat_mult_f32(&A, &s_m, &x_m);
 
-	//Finds the covariance matrix
-	//takes the transpose to get 1600 by 2, and then calculate covariance with 1, thus generating a 2x2 like Cov11 Cov12 / Cov21 Cov22
+	/*---------------Finds the covariance matrix------------------------*/
 
   //Finds the mean of both columns
   for(int t = 0; t < SAMPLE_SIZE; t++){
-    meanX += s_array[t];
-    meanY += s_array[1600 + t];
+    meanX += x_array[t];
+    meanY += x_array[SAMPLE_SIZE + t];
   }
 
   meanX = meanX / SAMPLE_SIZE;
   meanY = meanY / SAMPLE_SIZE;
 
   //Finds the covariance of 1-1
-  cov_array[0] = cov();
+  covariance = 0;
+  for(int t = 0; t < SAMPLE_SIZE; t++){
+    covariance += (x_array[t] - meanX) * (x_array[t] - meanX);
+  }
+  cov_array[0] = covariance / SAMPLE_SIZE;
 
-  //Finds the covariance of 1-2
-  cov_array[1] = cov();
-
-  //Finds the covariance of 2-1
-  cov_array[2] = cov();
+  //Finds the covariance of 1-2 (and 2-1)
+  covariance = 0;
+  for(int t = 0; t < SAMPLE_SIZE; t++){
+    covariance += (x_array[t] - meanX) * (x_array[t + SAMPLE_SIZE] - meanY);
+  }
+  cov_array[1] = covariance / SAMPLE_SIZE;
+  cov_array[2] = cov_array[1];
 
   //Finds the covariance of 2-2
-  cov_array[3] = cov();
-
-
-  float cov(float32_t s_array, float meanX, float meanY){
-    float covariance;
-    for(int t = 0; t < SAMPLE_SIZE; t++){
-      covariance += (s_array[t] - meanX) * (s_array[1600 + t] - meanY);
-    }
-    covariance = covariance / SAMPLE_SIZE;
+  covariance = 0;
+  for(int t = 0; t < SAMPLE_SIZE; t++){
+    covariance += (x_array[t + SAMPLE_SIZE] - meanY) * (x_array[t + SAMPLE_SIZE] - meanY);
   }
+  cov_array[3] = covariance / SAMPLE_SIZE;
+
+  /*------------------------------------------------------------------*/
+
+  //Computes the eigenvalues and eigenvectors of the covariance matrix
+  eig_mat_f32(&cov_array, &eigenVal_array , &eigenVect_array);
+
 
 
 
@@ -441,6 +458,34 @@ int main(void)
   }
 
 
+}
+
+
+//Takes a 2x2 matrix as input and computes the eigenvalues (stored in A) and eigenvectors (stored in B)
+void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
+    float32_t a = 1;
+    float32_t b = - (pSrcA[0] + pSrcA[3]);
+    float32_t det = pSrcA[0] * pSrcA[3] - pSrcA[1] * pSrcA[2];
+    float32_t c =  det;
+    float32_t eig1 = 0;
+    float32_t eig2 = 0;
+
+    if(pow(b, 2) - 4 * a * c) >= 0){
+        eig1 = (-b + sqrt(pow(b, 2) - 4 * a * c))/(2*a);
+        eig2 = (-b - sqrt(pow(b, 2) - 4 * a * c))/(2*a);
+    }
+
+    pDstA[0] = eig1;
+    pDstA[1] = 0;
+    pDstA[2] = 0;
+    pDstA[3] = eig2;
+
+    pDstB[0] = -(pSrcA[1]/(pSrcA[0] - eig1));
+    pDstB[1] = -(pSrcA[3]/(pSrcA[2] - eig2));
+    pDstB[2] = 1;
+    pDstB[3] = 1;
+
+    return 0;
 }
 
 /**
