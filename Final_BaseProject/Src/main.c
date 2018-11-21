@@ -77,7 +77,7 @@ float M_PI  = 3.1415926;
 float e = 2.718281828459045235360;
 int systick_flag = 0;
 int tim3_flag = 0;
-int SAMPLE_SIZE = 32000;
+int SAMPLE_SIZE = 1600; //generating samples for only 0.1s
 int SAMPLE_FREQ = 16000;
 float f1 = 261.63, f2 = 392.00, f = 440; // C4 and G4
 float s1 = 0, s2 = 0;
@@ -120,10 +120,7 @@ int fgetc(FILE *f) {
 float test;
 float test1;
 
-float32_t a_array[4] = {1,2,
-												2,1};
-float32_t s_array[2];
-float32_t x_array[2];
+
 float32_t W_array[4];
 float32_t WT_array[4];
 float32_t w_array[2] = {0.3, 0.6}; //Initialized to "random value"
@@ -156,42 +153,19 @@ float32_t dotProd;
 	
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
-	srand(6);
-	
+  /* USER CODE BEGIN 1 */										
+	float32_t a_array[4] = {1,2,
+												  2,1};
 	arm_matrix_instance_f32 A;
-	arm_matrix_instance_f32 s_m;
-	arm_matrix_instance_f32 x_m;
-	arm_matrix_instance_f32 W;
-	arm_matrix_instance_f32 WT;
-	arm_matrix_instance_f32 w;
-	arm_matrix_instance_f32 wLast;
-	arm_matrix_instance_f32 wT;
-	arm_matrix_instance_f32 wj; //temp
-	arm_matrix_instance_f32 u;
-	arm_matrix_instance_f32 E1;
-	arm_matrix_instance_f32 E2;
-	
 	arm_mat_init_f32(&A,2,2,a_array);
-	arm_mat_init_f32(&s_m,2,1,s_array);
-	arm_mat_init_f32(&x_m,2,1,x_array);
-	arm_mat_init_f32(&W,2,2,W_array);
-	arm_mat_init_f32(&WT,2,2,WT_array);
-	arm_mat_init_f32(&w,2,1,w_array);
-	arm_mat_init_f32(&wLast,2,1,wLast_array);
-	arm_mat_init_f32(&wT,1,2,wT_array);
-	arm_mat_init_f32(&wj,2,1,wj_array);
-	arm_mat_init_f32(&u,1,1,u_array);
-	arm_mat_init_f32(&E1,2,1,E1_array);
-	arm_mat_init_f32(&E2,2,1,E2_array);
-	
-	float32_t wjLast_array[2];//
-	arm_matrix_instance_f32 wjLast;//
-	arm_mat_init_f32(&wjLast,2,1,wjLast_array);//
-	
-	float32_t temp_array[2];//
-	arm_matrix_instance_f32 temp;//
-	arm_mat_init_f32(&temp,2,1,temp_array);//
+													
+	float32_t s_array[3200];
+	arm_matrix_instance_f32 s_m;
+	arm_mat_init_f32(&s_m,2,1600,s_array);
+													
+	float32_t x_array[3200];
+	arm_matrix_instance_f32 x_m;
+	arm_mat_init_f32(&x_m,2,1600,x_array);
 
   /* USER CODE END 1 */
 
@@ -268,22 +242,46 @@ int main(void)
 //		BSP_QSPI_Erase_Sector(t);
 //	}
 
-	BSP_QSPI_Erase_Chip();
+	//BSP_QSPI_Erase_Chip();
 
 	for(int t = 0; t < SAMPLE_SIZE; t++){
 		float x = 2 * M_PI * t / SAMPLE_FREQ;
-		//s_array[0] = arm_sin_f32((float) x*f1) * 512 + 512;
-		//s_array[1] = arm_sin_f32((float) x*f2) * 512 + 512;
 		
-		s_array[0] = arm_sin_f32((float) x*f1);
-		s_array[1] = arm_sin_f32((float) x*f2);
-//		s_array[0] = 3;
-//		s_array[1] = 0x33;
-		arm_mat_mult_f32(&A, &s_m, &x_m);
-	
-		BSP_QSPI_Write((uint8_t *)&x_array[0], t*0x100, 8); 
-		//  1 sample from 2 channels in one page 
+		//Generates the signal and stores in in SRAM
+		s_array[t] = arm_sin_f32((float) x*f1);
+		s_array[1600 + t] = arm_sin_f32((float) x*f2);
+
 	}
+	
+	//Mixes the signals
+	arm_mat_mult_f32(&A, &s_m, &x_m);
+	
+	//Finds the covariance matrix
+	//takes the transpose to get 1600 by 2, and then calculate covariance with 1, thus generating a 2x2 like Cov 0 / 0 cov
+	
+	//find mean on 1st column and mean of 2nd column
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	//fastICA
