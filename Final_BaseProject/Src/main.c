@@ -6,41 +6,41 @@
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
-  * USER CODE END. Other portions of this file, whether 
+  * USER CODE END. Other portions of this file, whether
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * Copyright (c) 2018 STMicroelectronics International N.V. 
+  * Copyright (c) 2018 STMicroelectronics International N.V.
   * All rights reserved.
   *
-  * Redistribution and use in source and binary forms, with or without 
+  * Redistribution and use in source and binary forms, with or without
   * modification, are permitted, provided that the following conditions are met:
   *
-  * 1. Redistribution of source code must retain the above copyright notice, 
+  * 1. Redistribution of source code must retain the above copyright notice,
   *    this list of conditions and the following disclaimer.
   * 2. Redistributions in binary form must reproduce the above copyright notice,
   *    this list of conditions and the following disclaimer in the documentation
   *    and/or other materials provided with the distribution.
-  * 3. Neither the name of STMicroelectronics nor the names of other 
-  *    contributors to this software may be used to endorse or promote products 
+  * 3. Neither the name of STMicroelectronics nor the names of other
+  *    contributors to this software may be used to endorse or promote products
   *    derived from this software without specific written permission.
-  * 4. This software, including modifications and/or derivative works of this 
+  * 4. This software, including modifications and/or derivative works of this
   *    software, must execute solely and exclusively on microcontroller or
   *    microprocessor devices manufactured by or for STMicroelectronics.
-  * 5. Redistribution and use of this software other than as permitted under 
-  *    this license is void and will automatically terminate your rights under 
-  *    this license. 
+  * 5. Redistribution and use of this software other than as permitted under
+  *    this license is void and will automatically terminate your rights under
+  *    this license.
   *
-  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
-  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
-  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT
+  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
   * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
-  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
+  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT
   * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
   * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
-  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
+  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
   * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
   * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   *
@@ -127,45 +127,44 @@ float32_t w_array[2] = {0.3, 0.6}; //Initialized to "random value"
 float32_t wLast_array[2];
 float32_t wT_array[2];
 float32_t wj_array[2];
-float32_t u_array[1];		
+float32_t u_array[1];
 float32_t E1_array[2];
-float32_t E2_array[2];															
-														
-													
-													
+float32_t E2_array[2];
+
+
+
 
 //W = 2x2 weight matrix, used to find A, initialized with 3 6 / 6 3
 int k = 0;
 float delta = 1000;
 float conv = 1e-7; //convergence criteria
 int maxIt = 10; //Max number of iterations
-float g;
-float g_exp;
-float w_magn;
-float gp;
-float gp_cnst = 1;
-float gp_sum = 0;
-int j = 0;
+float meanX;
+float meanY;
 
 float32_t dotProd;
 
 
-	
+
 int main(void)
 {
-  /* USER CODE BEGIN 1 */										
+  /* USER CODE BEGIN 1 */
 	float32_t a_array[4] = {1,2,
 												  2,1};
 	arm_matrix_instance_f32 A;
 	arm_mat_init_f32(&A,2,2,a_array);
-													
+
 	float32_t s_array[3200];
 	arm_matrix_instance_f32 s_m;
 	arm_mat_init_f32(&s_m,2,1600,s_array);
-													
+
 	float32_t x_array[3200];
 	arm_matrix_instance_f32 x_m;
 	arm_mat_init_f32(&x_m,2,1600,x_array);
+
+  float32_t cov_array[4];
+  arm_matrix_instance_f32 cov_m;
+  arm_mat_init_f32(&cov_m,2,2,cov_array);
 
   /* USER CODE END 1 */
 
@@ -221,20 +220,20 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
- 
+
 
   /* Start scheduler */
   //osKernelStart();
-  
+
   /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-	
 
-	// TODO: Once you have verified that your sine wave generation 
-	// is correct, you must think about how to store the wave. 
+
+	// TODO: Once you have verified that your sine wave generation
+	// is correct, you must think about how to store the wave.
 	//	int size = SAMPLE_SIZE * 32 / 8;
 //	test = arm_sin_f32(M_PI/2);
 //	test1 = arm_sin_f32(5 * M_PI/2);
@@ -246,114 +245,139 @@ int main(void)
 
 	for(int t = 0; t < SAMPLE_SIZE; t++){
 		float x = 2 * M_PI * t / SAMPLE_FREQ;
-		
+
 		//Generates the signal and stores in in SRAM
 		s_array[t] = arm_sin_f32((float) x*f1);
 		s_array[1600 + t] = arm_sin_f32((float) x*f2);
 
 	}
-	
+
 	//Mixes the signals
 	arm_mat_mult_f32(&A, &s_m, &x_m);
-	
+
 	//Finds the covariance matrix
-	//takes the transpose to get 1600 by 2, and then calculate covariance with 1, thus generating a 2x2 like Cov 0 / 0 cov
-	
-	//find mean on 1st column and mean of 2nd column
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	//takes the transpose to get 1600 by 2, and then calculate covariance with 1, thus generating a 2x2 like Cov11 Cov12 / Cov21 Cov22
+
+  //Finds the mean of both columns
+  for(int t = 0; t < SAMPLE_SIZE; t++){
+    meanX += s_array[t];
+    meanY += s_array[1600 + t];
+  }
+
+  meanX = meanX / SAMPLE_SIZE;
+  meanY = meanY / SAMPLE_SIZE;
+
+  //Finds the covariance of 1-1
+  cov_array[0] = cov();
+
+  //Finds the covariance of 1-2
+  cov_array[1] = cov();
+
+  //Finds the covariance of 2-1
+  cov_array[2] = cov();
+
+  //Finds the covariance of 2-2
+  cov_array[3] = cov();
+
+
+  float cov(float32_t s_array, float meanX, float meanY){
+    float covariance;
+    for(int t = 0; t < SAMPLE_SIZE; t++){
+      covariance += (s_array[t] - meanX) * (s_array[1600 + t] - meanY);
+    }
+    covariance = covariance / SAMPLE_SIZE;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//fastICA
 	for(int i = 0; i < 2; i++){
 
-		// reset delta 
+		// reset delta
 		delta = 1000;
-		// reset k 
+		// reset k
 		k = 0;
-		
+
 		//while (k < maxIt){
 		while(fabs(delta) > conv && k < maxIt){
 			k++;
-			
 
-			
-			// reset sums 
+
+
+			// reset sums
 			E1_array[0] = 0;
 			E1_array[1] = 0;
 			E2_array[0] = 0;
 			E2_array[1] = 0;
 			gp_sum = 0;
-			
+
 			// read all x and calculate average
 			for(j = 0; j < SAMPLE_SIZE; j++){
 //				float temp_array[2];
 //				arm_matrix_instance_f32 temp;
 //				arm_mat_init_f32(&temp,2,1,temp_array);
-				BSP_QSPI_Read((uint8_t *)&x_array[0], j*0x100, 8); 
-				
+				BSP_QSPI_Read((uint8_t *)&x_array[0], j*0x100, 8);
+
 				/* u = wT * x (u is a scalar) */
 				arm_mat_trans_f32(&w, &wT);
 				arm_mat_mult_f32(&wT, &x_m, &u);
-			
+
 				g = tanh(u_array[0]);
 				gp = 1 - (tanh(u_array[0]) * tanh(u_array[0]));
-				
+
 				arm_mat_scale_f32(&x_m, g, &temp);
 				arm_mat_add_f32(&temp,&E1,&E1);
 
 				gp_sum += gp;
-			
+
 			}
-			
+
 			arm_mat_scale_f32(&E1,(float)1/SAMPLE_SIZE,&E1);
 			gp_sum = gp_sum / (float)SAMPLE_SIZE;
 
 			arm_mat_scale_f32(&w, gp_sum, &E2);
-				
+
 			arm_mat_sub_f32(&E1, &E2, &w);
-			
+
 //------------------------------------------
 			if(i == 1){
 				arm_matrix_instance_f32 w1;
 				float32_t w1_array[2];
 				arm_mat_init_f32(&w1,2,1,w1_array);
-				
+
 				w1_array[0] = W_array[0];
 				w1_array[1] = W_array[2];
-				
+
 				arm_mat_trans_f32(&w, &wT);
 				arm_mat_mult_f32(&wT, &w1, &u);
 				arm_mat_scale_f32(&w1, u_array[0], &wj);
 				arm_mat_sub_f32(&w, &wj, &w);
 			}
-			
+
 //----------------------------------------------
 
 			/* w = w/|w| */
 			w_magn = sqrt(pow(w_array[0], 2) + pow(w_array[1], 2));
 			arm_mat_scale_f32(&w, 1/w_magn, &w);
-			
+
 			/* delta = 1 - abs(dot(w,wLast)) // dot(w,wLast) = 1 when 2 = wLast // */
 //			arm_dot_prod_f32(&w_array[0], &wLast_array[0], 2, &dotProd);
 //			delta = 1 - fabs(dotProd);
@@ -363,37 +387,37 @@ int main(void)
 			//}
 			wLast_array[0] = w_array[0];
 			wLast_array[1] = w_array[1];
-			
+
 		}
 
 		// form bigger W matrix with wp's (column vectors)
 		W_array[i] = w_array[0];
 		W_array[i + 2] = w_array[1];
-		
+
 		//------------------------------------
 //		if(i == 0){
 //			wLast_array[0] = w_array[0];
 //			wLast_array[1] = w_array[1];
 //		}
 		//------------------------------------
-		
+
 		// reset random w
-		w_array[0] = 0.5; 
-		w_array[1] = 0.6; 
-		
+		w_array[0] = 0.5;
+		w_array[1] = 0.6;
+
 	}
-			
+
 	arm_mat_trans_f32(&W, &WT);
-	
+
 	// s = WT * x;
 	for (int t = 0; t < SAMPLE_SIZE; t ++ ){
-		BSP_QSPI_Read((uint8_t *)&x_array[0], t*0x100, 8); 
-		
+		BSP_QSPI_Read((uint8_t *)&x_array[0], t*0x100, 8);
+
 		arm_mat_mult_f32(&WT, &x_m, &s_m);
-		BSP_QSPI_Write((uint8_t *)&s_array[0], t*0x100, 8); 
-		//  1 sample from 2 channels in one page 
+		BSP_QSPI_Write((uint8_t *)&s_array[0], t*0x100, 8);
+		//  1 sample from 2 channels in one page
 	}
-	
+
 	//Reads the stored samples
 	int i = 0;
 	while (1)
@@ -405,7 +429,7 @@ int main(void)
 //			HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)s1);
 //			HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)s2);
 			systick_flag = 0;
-			BSP_QSPI_Read((uint8_t *)&x_array[0], i*0x100, 8); 
+			BSP_QSPI_Read((uint8_t *)&x_array[0], i*0x100, 8);
 			HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)(x_array[0]*512 + 512));
 			HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)(x_array[1]*512 + 512));
 			if(i == SAMPLE_SIZE){
@@ -415,8 +439,8 @@ int main(void)
 			}
 		}
   }
-	
-	
+
+
 }
 
 /**
@@ -430,7 +454,7 @@ void SystemClock_Config(void)
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
   RCC_PeriphCLKInitTypeDef PeriphClkInit;
 
-    /**Initializes the CPU, AHB and APB busses clocks 
+    /**Initializes the CPU, AHB and APB busses clocks
     */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
@@ -448,7 +472,7 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Initializes the CPU, AHB and APB busses clocks 
+    /**Initializes the CPU, AHB and APB busses clocks
     */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
@@ -479,18 +503,18 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Configure the main internal regulator output voltage 
+    /**Configure the main internal regulator output voltage
     */
   if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Configure the Systick interrupt time 
+    /**Configure the Systick interrupt time
     */
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/16000);
 
-    /**Configure the Systick 
+    /**Configure the Systick
     */
   HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
@@ -504,7 +528,7 @@ static void MX_DAC1_Init(void)
 
   DAC_ChannelConfTypeDef sConfig;
 
-    /**DAC Initialization 
+    /**DAC Initialization
     */
   hdac1.Instance = DAC1;
   if (HAL_DAC_Init(&hdac1) != HAL_OK)
@@ -512,7 +536,7 @@ static void MX_DAC1_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**DAC channel OUT1 config 
+    /**DAC channel OUT1 config
     */
   sConfig.DAC_SampleAndHold = DAC_SAMPLEANDHOLD_DISABLE;
   sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
@@ -524,7 +548,7 @@ static void MX_DAC1_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**DAC channel OUT2 config 
+    /**DAC channel OUT2 config
     */
   sConfig.DAC_ConnectOnChipPeripheral = DAC_CHIPCONNECT_DISABLE;
   if (HAL_DAC_ConfigChannel(&hdac1, &sConfig, DAC_CHANNEL_2) != HAL_OK)
@@ -646,11 +670,11 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /**
-* moving average 
+* moving average
 */
 
 void sma_c(float *sign, float *signFilt, int N, int D){
-	
+
 		int n;
 		int i;
 		float sum = 0;
@@ -664,7 +688,7 @@ void sma_c(float *sign, float *signFilt, int N, int D){
 					}
 				}
 			}
-			
+
 			if(D%2!=0){
 				for(i=(n-D/2); i<=(n+((D/2))); i++){
 					if (i>=0&&i<=N){
@@ -689,7 +713,7 @@ void StartDefaultTask(void const * argument)
   {
     osDelay(1);
   }
-  /* USER CODE END 5 */ 
+  /* USER CODE END 5 */
 }
 
 /**
@@ -738,7 +762,7 @@ void _Error_Handler(char *file, int line)
   * @retval None
   */
 void assert_failed(uint8_t* file, uint32_t line)
-{ 
+{
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
