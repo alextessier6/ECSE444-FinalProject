@@ -151,108 +151,108 @@ int main(void)
         2,1};
     arm_matrix_instance_f32 A;
     arm_mat_init_f32(&A,2,2,a_array);
-    
+
     float32_t adwt_array[4];
     arm_matrix_instance_f32 Adwt;
     arm_mat_init_f32(&Adwt,2,2,a_array);
-    
+
     float32_t s_array[3200];
     arm_matrix_instance_f32 s_m;
     arm_mat_init_f32(&s_m,2,1600,s_array);
-    
+
     float32_t x_array[3200];
     arm_matrix_instance_f32 x_m;
     arm_mat_init_f32(&x_m,2,1600,x_array);
-    
+
     float32_t xT_array[3200];
     arm_matrix_instance_f32 xT_m;
     arm_mat_init_f32(&xT_m,2,1600,xT_array);
-    
+
     float32_t cov_array[4];
     arm_matrix_instance_f32 cov_m;
     arm_mat_init_f32(&cov_m,2,2,cov_array);
-    
+
     float32_t eigenVal_array[4];
     arm_matrix_instance_f32 eigenVal_m;
     arm_mat_init_f32(&eigenVal_m,2,2,eigenVal_array);
-    
+
     float32_t eigenVect_array[4];
     arm_matrix_instance_f32 eigenVect_m;
     arm_mat_init_f32(&eigenVect_m,2,2,eigenVect_array);
-    
+
     float32_t eigenVectT_array[4];
     arm_matrix_instance_f32 eigenVectT_m;
     arm_mat_init_f32(&eigenVectT_m,2,2,eigenVectT_array);
-    
+
     float32_t whitesig_array[4];
     arm_matrix_instance_f32 whitesig_m;
     arm_mat_init_f32(&whitesig_m,2,2,whitesig_array);
-    
+
     float32_t whitening_array[4];
     arm_matrix_instance_f32 whitening_m;
     arm_mat_init_f32(&whitening_m,2,2,whitening_array);
-    
+
     float32_t dewhitening_array[3200];
     arm_matrix_instance_f32 dewhitening_m;
     arm_mat_init_f32(&dewhitening_m,2,2,dewhitening_array);
-    
+
     //numOfIC = 2, B = zeros(numOfIC) --> B = 2x2 matrix
     float32_t B_array[4];
     arm_matrix_instance_f32 B_m;
     arm_mat_init_f32(&B_m,2,2,B_array);
-    
+
     float32_t BT_array[4];
     arm_matrix_instance_f32 BT_m;
     arm_mat_init_f32(&BT_m,2,2,BT_array);
-    
+
     float32_t temp_m_array[4];
     arm_matrix_instance_f32 temp_m;
     arm_mat_init_f32(&temp_m,2,2,temp_m_array);
-    
+
     float32_t temp_v_array[2];
     arm_matrix_instance_f32 temp_v;
     arm_mat_init_f32(&temp_m,2,1,temp_v_array);
-    
+
     float32_t temp_v_3200_array[3200];
     arm_matrix_instance_f32 temp_v_3200;
     arm_mat_init_f32(&temp_v_3200,3200,1,temp_v_3200_array);
-    
+
     arm_matrix_instance_f32 w;
     arm_mat_init_f32(&w,2,1,w_array);
-    
+
     arm_matrix_instance_f32 wT;
     arm_mat_init_f32(&wT,2,1,wT_array);
-    
+
     arm_matrix_instance_f32 W;
     arm_mat_init_f32(&W,2,2,W_array);
-    
+
     arm_matrix_instance_f32 WT;
     arm_mat_init_f32(&WT,2,2,WT_array);
-    
+
     float32_t A_array[4];
     arm_matrix_instance_f32 A_m;
     arm_mat_init_f32(&A_m,2,2,A_array);
-    
-    
-    
+
+
+
     /* USER CODE END 1 */
-    
+
     /* MCU Configuration----------------------------------------------------------*/
-    
+
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     HAL_Init();
-    
+
     /* USER CODE BEGIN Init */
-    
+
     /* USER CODE END Init */
-    
+
     /* Configure the system clock */
     SystemClock_Config();
-    
+
     /* USER CODE BEGIN SysInit */
-    
+
     /* USER CODE END SysInit */
-    
+
     /* Initialize all configured peripherals */
     MX_GPIO_Init();
     MX_USART1_UART_Init();
@@ -264,43 +264,43 @@ int main(void)
     HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
     // BSP_QSPI_Erase_Chip();
     /* USER CODE END 2 */
-    
+
     /* USER CODE BEGIN RTOS_MUTEX */
     /* add mutexes, ... */
     /* USER CODE END RTOS_MUTEX */
-    
+
     /* USER CODE BEGIN RTOS_SEMAPHORES */
     /* add semaphores, ... */
     /* USER CODE END RTOS_SEMAPHORES */
-    
+
     /* USER CODE BEGIN RTOS_TIMERS */
     /* start timers, add new ones, ... */
     /* USER CODE END RTOS_TIMERS */
-    
+
     /* Create the thread(s) */
     /* definition and creation of defaultTask */
     //osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
     //defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-    
+
     /* USER CODE BEGIN RTOS_THREADS */
     /* add threads, ... */
     /* USER CODE END RTOS_THREADS */
-    
+
     /* USER CODE BEGIN RTOS_QUEUES */
     /* add queues, ... */
     /* USER CODE END RTOS_QUEUES */
-    
-    
+
+
     /* Start scheduler */
     //osKernelStart();
-    
+
     /* We should never get here as control is now taken by the scheduler */
-    
+
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
-    
-    
-    
+
+
+
     // TODO: Once you have verified that your sine wave generation
     // is correct, you must think about how to store the wave.
     //    int size = SAMPLE_SIZE * 32 / 8;
@@ -309,31 +309,31 @@ int main(void)
     //    for (int t = 0; t < 25; t ++ ){
     //        BSP_QSPI_Erase_Sector(t);
     //    }
-    
+
     //BSP_QSPI_Erase_Chip();
-    
+
     for(int t = 0; t < SAMPLE_SIZE; t++){
         float x = 2 * M_PI * t / SAMPLE_FREQ;
-        
+
         //Generates the signal and stores in in SRAM
         s_array[t] = arm_sin_f32((float) x*f1);
         s_array[SAMPLE_SIZE + t] = arm_sin_f32((float) x*f2);
-        
+
     }
-    
+
     //Mixes the signals
     arm_mat_mult_f32(&A, &s_m, &x_m);
-    
+
     /*****computing cov and eig (pcamat)*****/
     //Finds the covariance matrix
     cov(&x_array[0], &cov_array[0]);
-    
+
     //Computes the eigenvalues and eigenvectors of the covariance matrix
     eig_mat_f32(&cov_array[0], &eigenVal_array[0] , &eigenVect_array[0]);
-    
+
     //in matlab, D = eigenvalues  and E = eigenvectors
-    
-    
+
+
     /*****calculating whitening & dewhitening matricesa (whitenv)*****/
     for(int i = 0; i< 4; i++){
         whitening_array[i] = sqrt(eigenVal_array[i]);                                // sqrt(D) ** saving sqrt(D) temporarily into whitening_m
@@ -342,22 +342,22 @@ int main(void)
     arm_mat_inverse_f32    (&whitening_m, &whitening_m);                         // inv(sqrt(D))
     arm_mat_trans_f32(&eigenVect_m,&eigenVectT_m);                                 // E'
     arm_mat_mult_f32(&whitening_m, &eigenVectT_m, &whitening_m);    // whitening_m = inv(sqrt(D)) * E'
-    
+
     // Project to the eigenvectors of the covariance matrix.
     // Whiten the samples and reduce dimension simultaneously
     arm_mat_mult_f32(&whitening_m, &x_m, &whitesig_m);                      // whitesig = whiteningMatrix * mixedsig
-    
-    
+
+
     /****FastICA***/
     //B = zeros(numOfIC), numOfIC = 2, B ---> 2x2 matrix of zeros
     B_array[0] = 0;
     B_array[1] = 0;
     B_array[2] = 0;
     B_array[3] = 0;
-    
+
     for(int i = 0; i < 2; i++){
         // w_array initialised to be {0.3, 0.6};
-        
+
         // Take a random initial vector of length 1 and orthogonalise it
         // with respect to the other vectors
         arm_mat_trans_f32(&B_m,&BT_m);                                                            //B'
@@ -366,92 +366,92 @@ int main(void)
         arm_mat_sub_f32(&w,&temp_v,&w);                                                            //w = w - B * B' * w
         w_magn = sqrt(pow(w_array[0],2) + pow(w_array[1],2));                //norm(w) = sqrt(w[1]^2 + w[2]^2)
         arm_mat_scale_f32(&w, 1/w_magn, &w);                                                //w = w/norm(w)
-        
+
         //wLast = zeros(size(w))
         wLast_array[0] = 0;
         wLast_array[1] = 0;
-        
-        
+
+
         while(k < maxIt){
-            
+
             // Project the vector into the space orthogonal to the space
             // spanned by the earlier found basis vectors.
             arm_mat_trans_f32(&B_m,&BT_m);
             arm_mat_mult_f32(&B_m, &BT_m, &temp_m);
             arm_mat_mult_f32(&temp_m, &w, &temp_v);
             arm_mat_sub_f32(&w,&temp_v,&w);
-            
+
             // w = w / norm(w)
             w_magn = sqrt(pow(w_array[0],2) + pow(w_array[1],2));
             arm_mat_scale_f32(&w, 1/w_magn, &w);
-            
+
             float diff[2], sum[2];
             arm_sub_f32(&w_array[0], &wLast_array[1],&diff[0],2);          //w - wLast
             arm_add_f32(&w_array[0], &wLast_array[1],&sum[1],2);             //w + wLast
             if(sqrt(pow(diff[0],2) + pow(diff[1],2)) < conv ||
                sqrt(pow(sum[0],2) + pow(sum[1],2)) < conv){
-                
+
                 // Saving the vector
                 // B(:,i) = w
                 B_array[i] = w_array[0];
                 B_array[i + 2] = w_array[1];
-                
+
                 // Calculate the dewhitened vector
                 // A(:,i) = dewhiteningM * w
                 arm_mat_mult_f32(&dewhitening_m, &w, &temp_v);
                 adwt_array[i] = temp_v_array[0];
                 adwt_array[i + 2] = temp_v_array[1];
-                
+
                 // Calculate ICA filter
                 // W(round,:) = w' * whiteningMatrix
                 arm_mat_trans_f32(&w, &wT);
                 arm_mat_mult_f32(&wT, &whitening_m, &temp_v);
                 W_array[i] =  temp_v_array[0];
                 W_array[i + 1] =  temp_v_array[1];
-                
+
                 break;
             }
-            
+
             //WLast = w;
             wLast_array[0] = w_array[0];
             wLast_array[1] = w_array[1];
-            
+
             // pow3
             // w = (x * ((x' * w) . ^3)) / SAMPLE_SIZE - (3*w)
             arm_mat_trans_f32(&x_m, &xT_m);
             arm_mat_mult_f32(&xT_m, &w, &temp_v_3200);
-            for(int j = 0; j < 3200; j++){
+            for(int j = 0; j < SAMPLE_SIZE; j++){
                 temp_v_3200_array[j] = pow(temp_v_3200_array[j],3);
             }
             arm_mat_mult_f32(&x_m, &temp_v_3200, &temp_v);
             arm_mat_scale_f32(&temp_v, 1/SAMPLE_SIZE, &temp_v); // (X * ((X' * w).^3)) / numSamples
-            
+
             arm_mat_scale_f32(&w, 3, &w); // save 3*w directly into w
-            
+
             arm_mat_sub_f32(&temp_v, &w, &w);
-            
+
             // w = w / norm(w)
             w_magn = sqrt(pow(w_array[0],2) + pow(w_array[1],2));
             arm_mat_scale_f32(&w, 1/w_magn, &w);
             k++;
         }
-        
+
         /*TODO:  Will have a problem here b/c w_array would always be [0.5,0.6], need to find a way to generate
          a random w_array for next iteration without overwriting the current w_array*/
         // reset random w
         w_array[0] = 0.5;
         w_array[1] = 0.6;
     }
-    
+
     arm_mat_trans_f32(&W, &WT);
-    
+
     // s = WT * x;
     for (int t = 0; t < SAMPLE_SIZE; t ++ ){
         arm_mat_mult_f32(&WT, &x_m, &s_m);
         // BSP_QSPI_Write((uint8_t *)&s_array[0], t*0x100, 8);
         //  1 sample from 2 channels in one page
     }
-    
+
     //Reads the stored samples
     int i = 0;
     while (1)
@@ -473,8 +473,8 @@ int main(void)
             }
         }
     }
-    
-    
+
+
 }
 
 //Computes the covariance of the data matrix and outputs the covariance matrix
@@ -487,17 +487,17 @@ void cov(float32_t *x_array, float32_t *cov_array){
         meanX += x_array[t];
         meanY += x_array[SAMPLE_SIZE + t];
     }
-    
+
     meanX = meanX / SAMPLE_SIZE;
     meanY = meanY / SAMPLE_SIZE;
-    
+
     //Finds the covariance of 1-1
     covariance = 0;
     for(int t = 0; t < SAMPLE_SIZE; t++){
         covariance += (x_array[t] - meanX) * (x_array[t] - meanX);
     }
     cov_array[0] = covariance / SAMPLE_SIZE;
-    
+
     //Finds the covariance of 1-2 (and 2-1)
     covariance = 0;
     for(int t = 0; t < SAMPLE_SIZE; t++){
@@ -505,7 +505,7 @@ void cov(float32_t *x_array, float32_t *cov_array){
     }
     cov_array[1] = covariance / SAMPLE_SIZE;
     cov_array[2] = cov_array[1];
-    
+
     //Finds the covariance of 2-2
     covariance = 0;
     for(int t = 0; t < SAMPLE_SIZE; t++){
@@ -522,22 +522,22 @@ void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
     float32_t c =  det;
     float32_t eig1 = 0;
     float32_t eig2 = 0;
-    
+
     if((pow(b, 2) - 4 * a * c) >= 0){
         eig1 = (-b + sqrt(pow(b, 2) - 4 * a * c))/(2*a);
         eig2 = (-b - sqrt(pow(b, 2) - 4 * a * c))/(2*a);
     }
-    
+
     pDstA[0] = eig1;
     pDstA[1] = 0;
     pDstA[2] = 0;
     pDstA[3] = eig2;
-    
+
     pDstB[0] = -(pSrcA[1]/(pSrcA[0] - eig1));
     pDstB[1] = -(pSrcA[3]/(pSrcA[2] - eig2));
     pDstB[2] = 1;
     pDstB[3] = 1;
-    
+
     //return 0;
 }
 
@@ -547,11 +547,11 @@ void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
  */
 void SystemClock_Config(void)
 {
-    
+
     RCC_OscInitTypeDef RCC_OscInitStruct;
     RCC_ClkInitTypeDef RCC_ClkInitStruct;
     RCC_PeriphCLKInitTypeDef PeriphClkInit;
-    
+
     /**Initializes the CPU, AHB and APB busses clocks
      */
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
@@ -569,7 +569,7 @@ void SystemClock_Config(void)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
     /**Initializes the CPU, AHB and APB busses clocks
      */
     RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
@@ -578,12 +578,12 @@ void SystemClock_Config(void)
     RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
     RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
     RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-    
+
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
     PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1|RCC_PERIPHCLK_SAI1
     |RCC_PERIPHCLK_DFSDM1;
     PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
@@ -600,22 +600,22 @@ void SystemClock_Config(void)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
     /**Configure the main internal regulator output voltage
      */
     if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
     /**Configure the Systick interrupt time
      */
     HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/16000);
-    
+
     /**Configure the Systick
      */
     HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-    
+
     /* SysTick_IRQn interrupt configuration */
     HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
 }
@@ -623,9 +623,9 @@ void SystemClock_Config(void)
 /* DAC1 init function */
 static void MX_DAC1_Init(void)
 {
-    
+
     DAC_ChannelConfTypeDef sConfig;
-    
+
     /**DAC Initialization
      */
     hdac1.Instance = DAC1;
@@ -633,7 +633,7 @@ static void MX_DAC1_Init(void)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
     /**DAC channel OUT1 config
      */
     sConfig.DAC_SampleAndHold = DAC_SAMPLEANDHOLD_DISABLE;
@@ -645,7 +645,7 @@ static void MX_DAC1_Init(void)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
     /**DAC channel OUT2 config
      */
     sConfig.DAC_ConnectOnChipPeripheral = DAC_CHIPCONNECT_DISABLE;
@@ -653,13 +653,13 @@ static void MX_DAC1_Init(void)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
 }
 
 /* DFSDM1 init function */
 static void MX_DFSDM1_Init(void)
 {
-    
+
     hdfsdm1_filter0.Instance = DFSDM1_Filter0;
     hdfsdm1_filter0.Init.RegularParam.Trigger = DFSDM_FILTER_SW_TRIGGER;
     hdfsdm1_filter0.Init.RegularParam.FastMode = ENABLE;
@@ -671,7 +671,7 @@ static void MX_DFSDM1_Init(void)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
     hdfsdm1_filter1.Instance = DFSDM1_Filter1;
     hdfsdm1_filter1.Init.RegularParam.Trigger = DFSDM_FILTER_SW_TRIGGER;
     hdfsdm1_filter1.Init.RegularParam.FastMode = ENABLE;
@@ -683,7 +683,7 @@ static void MX_DFSDM1_Init(void)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
     hdfsdm1_channel1.Instance = DFSDM1_Channel1;
     hdfsdm1_channel1.Init.OutputClock.Activation = ENABLE;
     hdfsdm1_channel1.Init.OutputClock.Selection = DFSDM_CHANNEL_OUTPUT_CLOCK_AUDIO;
@@ -701,7 +701,7 @@ static void MX_DFSDM1_Init(void)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
     hdfsdm1_channel2.Instance = DFSDM1_Channel2;
     hdfsdm1_channel2.Init.OutputClock.Activation = ENABLE;
     hdfsdm1_channel2.Init.OutputClock.Selection = DFSDM_CHANNEL_OUTPUT_CLOCK_AUDIO;
@@ -719,23 +719,23 @@ static void MX_DFSDM1_Init(void)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
     if (HAL_DFSDM_FilterConfigRegChannel(&hdfsdm1_filter0, DFSDM_CHANNEL_1, DFSDM_CONTINUOUS_CONV_ON) != HAL_OK)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
     if (HAL_DFSDM_FilterConfigRegChannel(&hdfsdm1_filter1, DFSDM_CHANNEL_2, DFSDM_CONTINUOUS_CONV_ON) != HAL_OK)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
 }
 
 /* USART1 init function */
 static void MX_USART1_UART_Init(void)
 {
-    
+
     huart1.Instance = USART1;
     huart1.Init.BaudRate = 115200;
     huart1.Init.WordLength = UART_WORDLENGTH_8B;
@@ -750,19 +750,19 @@ static void MX_USART1_UART_Init(void)
     {
         _Error_Handler(__FILE__, __LINE__);
     }
-    
+
 }
 
 /** Pinout Configuration
  */
 static void MX_GPIO_Init(void)
 {
-    
+
     /* GPIO Ports Clock Enable */
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOE_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
-    
+
 }
 
 /* USER CODE BEGIN 4 */
@@ -772,7 +772,7 @@ static void MX_GPIO_Init(void)
  */
 
 void sma_c(float *sign, float *signFilt, int N, int D){
-    
+
     int n;
     int i;
     float sum = 0;
@@ -786,7 +786,7 @@ void sma_c(float *sign, float *signFilt, int N, int D){
                 }
             }
         }
-        
+
         if(D%2!=0){
             for(i=(n-D/2); i<=(n+((D/2))); i++){
                 if (i>=0&&i<=N){
@@ -804,7 +804,7 @@ void sma_c(float *sign, float *signFilt, int N, int D){
 /* StartDefaultTask function */
 void StartDefaultTask(void const * argument)
 {
-    
+
     /* USER CODE BEGIN 5 */
     /* Infinite loop */
     for(;;)
@@ -825,13 +825,13 @@ void StartDefaultTask(void const * argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     /* USER CODE BEGIN Callback 0 */
-    
+
     /* USER CODE END Callback 0 */
     if (htim->Instance == TIM17) {
         HAL_IncTick();
     }
     /* USER CODE BEGIN Callback 1 */
-    
+
     /* USER CODE END Callback 1 */
 }
 
@@ -877,4 +877,3 @@ void assert_failed(uint8_t* file, uint32_t line)
  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
-
