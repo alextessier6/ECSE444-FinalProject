@@ -153,12 +153,14 @@ float32_t temp_w_array[2];
 float32_t temp_v_1600_array[1600];											
 float32_t diff_array[2];
 float32_t sum_array[2];
+float32_t threeSig_array[6];
 											
 //W = 2x2 weight matrix, used to find A, initialized with 3 6 / 6 3
 int k = 0;
 float conv = 1e-4; //convergence criteria
 int maxIt = 1000; //Max number of iterations
 float w_magn = 0; // w magnitude
+int buttonPress = 0;
 
 
 float32_t dotProd;
@@ -320,18 +322,7 @@ int main(void)
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
 
-
-
-    // TODO: Once you have verified that your sine wave generation
-    // is correct, you must think about how to store the wave.
-    //    int size = SAMPLE_SIZE * 32 / 8;
-    //    test = arm_sin_f32(M_PI/2);
-    //    test1 = arm_sin_f32(5 * M_PI/2);
-    //    for (int t = 0; t < 25; t ++ ){
-    //        BSP_QSPI_Erase_Sector(t);
-    //    }
-
-    //BSP_QSPI_Erase_Chip();
+    BSP_QSPI_Erase_Chip();
 
     for(int t = 0; t < SAMPLE_SIZE; t++){
         float x = 2 * M_PI * t / SAMPLE_FREQ;
@@ -354,7 +345,6 @@ int main(void)
 
     //in matlab, D = eigenvalues  and E = eigenvectors
 
-
     /*****calculating whitening & dewhitening matricesa (whitenv)*****/
     for(int i = 0; i< 4; i++){
         temp_m_array[i] = sqrt(eigenVal_array[i]);                 	// sqrt(D) 
@@ -364,9 +354,6 @@ int main(void)
 		// inverse is not working, doing it manually, which is possible b/c wtn matrix is diagnal
     arm_mat_inverse_f32(&temp_m, &temp_m2);             // inv(sqrt(D))
 		
-		
-//		temp_m_array[0]= 1 /temp_m_array[0];
-//		temp_m_array[3]= 1 /temp_m_array[3];
     arm_mat_trans_f32(&eigenVect_m,&eigenVectT_m);                  // E'
     arm_mat_mult_f32(&temp_m2, &eigenVectT_m, &whitening_m);    			// whitening_m = inv(sqrt(D)) * E'
 
@@ -409,9 +396,6 @@ int main(void)
 						arm_mat_sub_f32(&w,&temp_v,&temp_w);                             //w = w - B * B' * w
 						w_magn = sqrt(pow(temp_w_array[0],2) + pow(temp_w_array[1],2));  //norm(w) = sqrt(w[1]^2 + w[2]^2)
 						arm_mat_scale_f32(&temp_w, 1/w_magn, &w);                        //w = w/norm(w)
-
-//            arm_sub_f32(&w_array[0], &wLast_array[0],&diff[0],2);       //diff = w - wLast
-//            arm_add_f32(&w_array[0], &wLast_array[0],&sum[0],2);        //sum  = w + wLast
 					
 					  arm_mat_sub_f32(&w, &wLast,&diff);       //diff = w - wLast
             arm_mat_add_f32(&w, &wLast,&sum);        //sum  = w + wLast
@@ -465,12 +449,6 @@ int main(void)
 						arm_mat_scale_f32(&temp_w, 1, &w);
             k++;						
         }
-
-        /*TODO:  Will have a problem here b/c w_array would always be [0.5,0.6], need to find a way to generate
-         a random w_array for next iteration without overwriting the current w_array
-				*
-				* reb: i think it is okay? cuz the current one is alreay saved? 
-				*/
 				
         // reset random w
         w_array[0] = 0.5;
@@ -481,34 +459,63 @@ int main(void)
 
     // s = WT * x;
     //for (int t = 0; t < SAMPLE_SIZE; t ++ ){
-        arm_mat_mult_f32(&W, &x_m, &s_m);
+        //arm_mat_mult_f32(&W, &x_m, &s_m);
         // BSP_QSPI_Write((uint8_t *)&s_array[0], t*0x100, 8);
         //  1 sample from 2 channels in one page
     //}
+		
+		for(int t = 0; t <= 32000; t++){
+        float x = 2 * M_PI * t / SAMPLE_FREQ;
+
+        //Generates the signal and stores in in SRAM
+				temp_v2_array[0] = arm_sin_f32((float) x*f1);
+        threeSig_array[0] = temp_v2_array[0];
+				temp_v2_array[1] = arm_sin_f32((float) x*f2);
+				threeSig_array[1] = temp_v2_array[1];
+				
+				arm_mat_mult_f32(&A, &temp_v2, &temp_v); 
+			
+				threeSig_array[2] = temp_v_array[0];
+				threeSig_array[3] = temp_v_array[1];
+			
+				arm_mat_mult_f32(&W, &temp_v, &temp_v2); 
+			
+        threeSig_array[4] = temp_v2_array[0];
+				threeSig_array[5] = temp_v2_array[1];
+				BSP_QSPI_Write((uint8_t*)&threeSig_array[0], t*0x100, 24);
+
+    }
 
     //Reads the stored samples
     int i = 0;
     while (1)
     {
+				if(!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)){
+					buttonPress++;
+					if(buttonPress > 2)
+						buttonPress = 0;
+				}
+//				
         if (systick_flag){
+				//if(!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)){
 //            float x = 2 * M_PI * i / SAMPLE_FREQ;
 //            s1 = arm_sin_f32((float) x * f1) * 512 + 512;
 //            s2 = arm_sin_f32((float) x * f2) * 512 + 512;
 //            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)s1);
 //            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)s2);
             systick_flag = 0;
-//						BSP_QSPI_Read((uint8_t *)&s_array[0], i*0x100, 8);
-            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)(s_array[i]*512 + 512));
-            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)(s_array[i+SAMPLE_SIZE]*512 + 512));
-            if(i == SAMPLE_SIZE){
+						BSP_QSPI_Read((uint8_t *)&threeSig_array[0], i*0x100, 24);
+            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)(threeSig_array[2*buttonPress]*512 + 763));
+            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)(threeSig_array[2*buttonPress+1]*512 + 763));
+            if(i == 32000){
                 i = 0;
             }else{
                 i++;
             }
-        }
+				}
+//				HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, 0);
+//        HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, 0);
     }
-
-
 }
 
 //Computes the covariance of the data matrix and outputs the covariance matrix
@@ -556,6 +563,7 @@ void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
     float32_t c =  det;
     float32_t eig1 = 0;
     float32_t eig2 = 0;
+		float32_t magnitude;
 
     if((pow(b, 2) - 4 * a * c) >= 0){
         eig1 = (-b + sqrt(pow(b, 2) - 4 * a * c))/(2*a);
@@ -568,16 +576,26 @@ void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
     pDstA[3] = eig1;
 
 		// TODO: eigenvector seems wrong, hardcoding it ...
-		pDstB[0] = 0.7069;
-    pDstB[1] = -0.7073;
-    pDstB[2] = -0.7073;
-    pDstB[3] = -0.7069;
-//    pDstB[0] = (pSrcA[1]);
-//    pDstB[1] = eig2 - pSrcA[3] ;
-//    pDstB[2] = (eig1 - pSrcA[0]);
-//    pDstB[3] = pSrcA[2];
+//		pDstB[0] = 0.7069;
+//    pDstB[1] = -0.7073;
+//    pDstB[2] = -0.7073;
+//    pDstB[3] = -0.7069;
+		
+		pDstB[0] = pSrcA[0] - eig1;
+    pDstB[1] = pSrcA[3] - eig2 ;
+    pDstB[2] = pSrcA[1];
+    pDstB[3] = pSrcA[2];
+		
+		magnitude = sqrt(pow(pDstB[0],2) + pow(pDstB[2],2));
+		pDstB[0] = pDstB[0]/magnitude;
+    pDstB[2] = pDstB[2]/magnitude;
 
+		magnitude = sqrt(pow(pDstB[1],2) + pow(pDstB[3],2));
+		pDstB[1] = pDstB[1]/magnitude;
+    pDstB[3] = pDstB[3]/magnitude;
+		
     //return 0;
+		
 }
 
 /**
@@ -797,10 +815,18 @@ static void MX_USART1_UART_Init(void)
 static void MX_GPIO_Init(void)
 {
 
-    /* GPIO Ports Clock Enable */
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOE_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
+	GPIO_InitTypeDef GPIO_InitStruct;
+
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+
+	 /*Configure GPIO pin : PC13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);	
+	
 
 }
 
