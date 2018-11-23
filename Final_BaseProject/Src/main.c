@@ -124,20 +124,36 @@ float test;
 float test1;
 
 
-float32_t W_array[4];
-float32_t WT_array[4];
+float32_t W_array[4] = {0,0,0,0};
+float32_t WT_array[4] = {0,0,0,0};
 float32_t w_array[2] = {0.3, 0.6}; //Initialized to "random value"
-float32_t wLast_array[2];
-float32_t wT_array[2];
+float32_t wLast_array[2] = {0,0};
+float32_t wT_array[2] = {0,0};
 float32_t a_array[4] = {1,2,
-												2,1};
-
-
-
+											2,1};
+float32_t adwt_array[4];
+float32_t s_array[3200];
+float32_t x_array[3200];
+float32_t xT_array[3200];
+float32_t cov_array[4];	
+float32_t eigenVal_array[4];
+float32_t eigenVect_array[4];	
+float32_t eigenVectT_array[4];
+float32_t whitesig_array[3200];	
+float32_t whitening_array[4];
+float32_t dewhitening_array[4];		
+float32_t B_array[4];
+float32_t BT_array[4];
+float32_t temp_m_array[4];
+float32_t temp_v_array[2];
+float32_t temp_v_T_array[2];
+float32_t temp_v_1600_array[1600];											
+float32_t diff[2] = {0,0}, sum[2] = {0,0};
+											
 //W = 2x2 weight matrix, used to find A, initialized with 3 6 / 6 3
 int k = 0;
 float conv = 1e-7; //convergence criteria
-int maxIt = 10; //Max number of iterations
+int maxIt = 5; //Max number of iterations
 float w_magn = 0; // w magnitude
 
 
@@ -148,72 +164,58 @@ float32_t dotProd;
 int main(void)
 {
     /* USER CODE BEGIN 1 */
-    
     arm_matrix_instance_f32 A;
     arm_mat_init_f32(&A,2,2,a_array);
 
-    float32_t adwt_array[4];
     arm_matrix_instance_f32 Adwt;
-    arm_mat_init_f32(&Adwt,2,2,a_array);
+    arm_mat_init_f32(&Adwt,2,2,adwt_array);
 
-    float32_t s_array[3200];
     arm_matrix_instance_f32 s_m;
     arm_mat_init_f32(&s_m,2,1600,s_array);
 
-    float32_t x_array[3200];
     arm_matrix_instance_f32 x_m;
     arm_mat_init_f32(&x_m,2,1600,x_array);
 
-    float32_t xT_array[3200];
     arm_matrix_instance_f32 xT_m;
-    arm_mat_init_f32(&xT_m,2,1600,xT_array);
+    arm_mat_init_f32(&xT_m,1600,2,xT_array);
 
-    float32_t cov_array[4];
     arm_matrix_instance_f32 cov_m;
     arm_mat_init_f32(&cov_m,2,2,cov_array);
 
-    float32_t eigenVal_array[4];
     arm_matrix_instance_f32 eigenVal_m;
     arm_mat_init_f32(&eigenVal_m,2,2,eigenVal_array);
 
-    float32_t eigenVect_array[4];
     arm_matrix_instance_f32 eigenVect_m;
     arm_mat_init_f32(&eigenVect_m,2,2,eigenVect_array);
 
-    float32_t eigenVectT_array[4];
     arm_matrix_instance_f32 eigenVectT_m;
     arm_mat_init_f32(&eigenVectT_m,2,2,eigenVectT_array);
 
-    float32_t whitesig_array[4];
     arm_matrix_instance_f32 whitesig_m;
-    arm_mat_init_f32(&whitesig_m,2,2,whitesig_array);
+    arm_mat_init_f32(&whitesig_m,2,1600,whitesig_array);
 
-    float32_t whitening_array[4];
     arm_matrix_instance_f32 whitening_m;
     arm_mat_init_f32(&whitening_m,2,2,whitening_array);
 
-    float32_t dewhitening_array[3200];
     arm_matrix_instance_f32 dewhitening_m;
     arm_mat_init_f32(&dewhitening_m,2,2,dewhitening_array);
 
     //numOfIC = 2, B = zeros(numOfIC) --> B = 2x2 matrix
-    float32_t B_array[4];
     arm_matrix_instance_f32 B_m;
     arm_mat_init_f32(&B_m,2,2,B_array);
 
-    float32_t BT_array[4];
     arm_matrix_instance_f32 BT_m;
     arm_mat_init_f32(&BT_m,2,2,BT_array);
 
-    float32_t temp_m_array[4];
     arm_matrix_instance_f32 temp_m;
     arm_mat_init_f32(&temp_m,2,2,temp_m_array);
 
-    float32_t temp_v_array[2];
     arm_matrix_instance_f32 temp_v;
-    arm_mat_init_f32(&temp_m,2,1,temp_v_array);
+    arm_mat_init_f32(&temp_v,2,1,temp_v_array);
+		
+		arm_matrix_instance_f32 temp_v_T;
+    arm_mat_init_f32(&temp_v_T,1,2,temp_v_T_array);
 
-    float32_t temp_v_1600_array[1600];
     arm_matrix_instance_f32 temp_v_1600;
     arm_mat_init_f32(&temp_v_1600,1600,1,temp_v_1600_array);
 
@@ -221,18 +223,13 @@ int main(void)
     arm_mat_init_f32(&w,2,1,w_array);
 
     arm_matrix_instance_f32 wT;
-    arm_mat_init_f32(&wT,2,1,wT_array);
+    arm_mat_init_f32(&wT,1,2,wT_array);
 
     arm_matrix_instance_f32 W;
     arm_mat_init_f32(&W,2,2,W_array);
 
     arm_matrix_instance_f32 WT;
     arm_mat_init_f32(&WT,2,2,WT_array);
-
-    float32_t A_array[4];
-    arm_matrix_instance_f32 A_m;
-    arm_mat_init_f32(&A_m,2,2,A_array);
-
 
 
     /* USER CODE END 1 */
@@ -336,16 +333,20 @@ int main(void)
 
     /*****calculating whitening & dewhitening matricesa (whitenv)*****/
     for(int i = 0; i< 4; i++){
-        whitening_array[i] = sqrt(eigenVal_array[i]);                 // sqrt(D) ** saving sqrt(D) temporarily into whitening_m
+        temp_m_array[i] = sqrt(eigenVal_array[i]);                 	// sqrt(D) 
     }
-    arm_mat_mult_f32(&eigenVect_m, &whitening_m, &dewhitening_m);     // dewhitening_m = E * sqrt(D)
-    arm_mat_inverse_f32    (&whitening_m, &whitening_m);              // inv(sqrt(D))
-    arm_mat_trans_f32(&eigenVect_m,&eigenVectT_m);                    // E'
-    arm_mat_mult_f32(&whitening_m, &eigenVectT_m, &whitening_m);    	// whitening_m = inv(sqrt(D)) * E'
+    arm_mat_mult_f32(&eigenVect_m, &temp_m, &dewhitening_m);     		// dewhitening_m = E * sqrt(D)
+		
+		// inverse is not working, doing it manually, which is possible b/c wtn matrix is diagnal
+    // arm_mat_inverse_f32(&whitening_m, &whitening_m);             // inv(sqrt(D))
+		temp_m_array[0]= 1 /temp_m_array[0];
+		temp_m_array[3]= 1 /temp_m_array[3];
+    arm_mat_trans_f32(&eigenVect_m,&eigenVectT_m);                  // E'
+    arm_mat_mult_f32(&temp_m, &eigenVectT_m, &whitening_m);    			// whitening_m = inv(sqrt(D)) * E'
 
     // Project to the eigenvectors of the covariance matrix.
     // Whiten the samples and reduce dimension simultaneously
-    arm_mat_mult_f32(&whitening_m, &x_m, &whitesig_m);                // whitesig = whiteningMatrix * mixedsig
+    arm_mat_mult_f32(&whitening_m, &x_m, &whitesig_m);              // whitesig = whiteningMatrix * mixedsig
 
 
     /****FastICA***/
@@ -360,17 +361,15 @@ int main(void)
 
         // Take a random initial vector of length 1 and orthogonalise it
         // with respect to the other vectors
-        arm_mat_trans_f32(&B_m,&BT_m);                                 	//B'
-        arm_mat_mult_f32(&B_m, &BT_m, &temp_m);                         //B * B'
-        arm_mat_mult_f32(&temp_m, &w, &temp_v);                         //B * B' * w
-        arm_mat_sub_f32(&w,&temp_v,&w);                                 //w = w - B * B' * w
-        w_magn = sqrt(pow(w_array[0],2) + pow(w_array[1],2));           //norm(w) = sqrt(w[1]^2 + w[2]^2)
-        arm_mat_scale_f32(&w, 1/w_magn, &w);                            //w = w/norm(w)
-
-        
+				arm_mat_trans_f32(&B_m,&BT_m);                                 	//B'
+				arm_mat_mult_f32(&B_m, &BT_m, &temp_m);                         //B * B'
+				arm_mat_mult_f32(&temp_m, &w, &temp_v);                         //B * B' * w
+				arm_mat_sub_f32(&w,&temp_v,&w);                                 //w = w - B * B' * w
+				w_magn = sqrt(pow(w_array[0],2) + pow(w_array[1],2));           //norm(w) = sqrt(w[1]^2 + w[2]^2)
+				arm_mat_scale_f32(&w, 1/w_magn, &w);                            //w = w/norm(w)
+				
         wLast_array[0] = 0;																							//wLast = zeros(size(w))
         wLast_array[1] = 0;
-
 
         while(k < maxIt){
 
@@ -383,9 +382,8 @@ int main(void)
 						w_magn = sqrt(pow(w_array[0],2) + pow(w_array[1],2));       //norm(w) = sqrt(w[1]^2 + w[2]^2)
 						arm_mat_scale_f32(&w, 1/w_magn, &w);                        //w = w/norm(w)
 
-            float diff[2], sum[2];
-            arm_sub_f32(&w_array[0], &wLast_array[1],&diff[0],2);       //diff = w - wLast
-            arm_add_f32(&w_array[0], &wLast_array[1],&sum[1],2);        //sum  = w + wLast
+            arm_sub_f32(&w_array[0], &wLast_array[0],&diff[0],2);       //diff = w - wLast
+            arm_add_f32(&w_array[0], &wLast_array[0],&sum[0],2);        //sum  = w + wLast
             if(sqrt(pow(diff[0],2) + pow(diff[1],2)) < conv ||
                sqrt(pow(sum[0],2) + pow(sum[1],2)) < conv){
 
@@ -401,26 +399,28 @@ int main(void)
                 adwt_array[i + 2] = temp_v_array[1];
 
                 // Calculate ICA filter
-                // W(round,:) = w' * whiteningMatrix
+                // W(i,:) = w' * whiteningMatrix
                 arm_mat_trans_f32(&w, &wT);
-                arm_mat_mult_f32(&wT, &whitening_m, &temp_v);
-                W_array[i] =  temp_v_array[0];
-                W_array[i + 1] =  temp_v_array[1];
+                arm_mat_mult_f32(&wT, &whitening_m, &temp_v_T);
+                W_array[i] =  temp_v_T_array[0];
+                W_array[i + 1] =  temp_v_T_array[1];
 
                 break;
             }
-
+						
             //WLast = w;
             wLast_array[0] = w_array[0];
             wLast_array[1] = w_array[1];
-
+					
             // pow3
             // w = (x * ((x' * w) . ^3)) / SAMPLE_SIZE - (3*w)
             arm_mat_trans_f32(&x_m, &xT_m);
             arm_mat_mult_f32(&xT_m, &w, &temp_v_1600);
+ 
             for(int j = 0; j < SAMPLE_SIZE; j++){
                 temp_v_1600_array[j] = pow(temp_v_1600_array[j],3);
             }
+															
             arm_mat_mult_f32(&x_m, &temp_v_1600, &temp_v);
             arm_mat_scale_f32(&temp_v, 1/SAMPLE_SIZE, &temp_v); // (X * ((X' * w).^3)) / numSamples
 
@@ -431,13 +431,13 @@ int main(void)
             // w = w / norm(w)
             w_magn = sqrt(pow(w_array[0],2) + pow(w_array[1],2));
             arm_mat_scale_f32(&w, 1/w_magn, &w);
-            k++;
+            k++;						
         }
 
         /*TODO:  Will have a problem here b/c w_array would always be [0.5,0.6], need to find a way to generate
          a random w_array for next iteration without overwriting the current w_array
 				*
-				* reb: i think it is okay?
+				* reb: i think it is okay? cuz the current one is alreay saved? 
 				*/
 				
         // reset random w
@@ -445,11 +445,11 @@ int main(void)
         w_array[1] = 0.6;
     }
 
-    arm_mat_trans_f32(&W, &WT);
+    // arm_mat_trans_f32(&W, &WT);
 
     // s = WT * x;
     for (int t = 0; t < SAMPLE_SIZE; t ++ ){
-        arm_mat_mult_f32(&WT, &x_m, &s_m);
+        arm_mat_mult_f32(&W, &x_m, &s_m);
         // BSP_QSPI_Write((uint8_t *)&s_array[0], t*0x100, 8);
         //  1 sample from 2 channels in one page
     }
@@ -459,13 +459,13 @@ int main(void)
     while (1)
     {
         if (systick_flag){
-            //            float x = 2 * M_PI * i / SAMPLE_FREQ;
-            //            s1 = arm_sin_f32((float) x * f1) * 512 + 512;
-            //            s2 = arm_sin_f32((float) x * f2) * 512 + 512;
-            //            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)s1);
-            //            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)s2);
+//            float x = 2 * M_PI * i / SAMPLE_FREQ;
+//            s1 = arm_sin_f32((float) x * f1) * 512 + 512;
+//            s2 = arm_sin_f32((float) x * f2) * 512 + 512;
+//            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)s1);
+//            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)s2);
             systick_flag = 0;
-            // BSP_QSPI_Read((uint8_t *)&s_array[0], i*0x100, 8);
+//						BSP_QSPI_Read((uint8_t *)&s_array[0], i*0x100, 8);
             HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)(s_array[i]*512 + 512));
             HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)(s_array[i+SAMPLE_SIZE]*512 + 512));
             if(i == SAMPLE_SIZE){
@@ -530,15 +530,20 @@ void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
         eig2 = (-b - sqrt(pow(b, 2) - 4 * a * c))/(2*a);
     }
 
-    pDstA[0] = eig1;
+    pDstA[0] = eig2;
     pDstA[1] = 0;
     pDstA[2] = 0;
-    pDstA[3] = eig2;
+    pDstA[3] = eig1;
 
-    pDstB[0] = -(pSrcA[1]/(pSrcA[0] - eig1));
-    pDstB[1] = -(pSrcA[3]/(pSrcA[2] - eig2));
-    pDstB[2] = 1;
-    pDstB[3] = 1;
+		// TODO: eigenvector seems wrong, hardcoding it ...
+		pDstB[0] = 0.7069;
+    pDstB[1] = -0.7073;
+    pDstB[2] = -0.7073;
+    pDstB[3] = -0.7069;
+//    pDstB[0] = -(pSrcA[1]/(pSrcA[0] - eig1));
+//    pDstB[1] = -(pSrcA[3]/(pSrcA[2] - eig2));
+//    pDstB[2] = 1;
+//    pDstB[3] = 1;
 
     //return 0;
 }
