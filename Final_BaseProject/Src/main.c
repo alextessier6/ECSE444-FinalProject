@@ -78,7 +78,7 @@ float e = 2.718281828459045235360;
 int systick_flag = 0;
 int buttonFlag = 0;
 int tim3_flag = 0;
-int SAMPLE_SIZE = 1600; //generating samples for only 0.1s
+int SAMPLE_SIZE = 1600; //generating samples for only 0.1s (for fastICA)
 int SAMPLE_FREQ = 16000;
 float f1 = 261.63, f2 = 392.00, f = 440; // C4 and G4
 float s1 = 0, s2 = 0;
@@ -254,9 +254,6 @@ int main(void)
 
     arm_matrix_instance_f32 WT;
     arm_mat_init_f32(&WT,2,2,WT_array);
-		
-		
-
 
     /* USER CODE END 1 */
 
@@ -322,8 +319,10 @@ int main(void)
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
 
+		//Erases the QSPI memory to avoid any problems
     BSP_QSPI_Erase_Chip();
 
+		//Generates 1600 samples to be used for FastICA
     for(int t = 0; t < SAMPLE_SIZE; t++){
         float x = 2 * M_PI * t / SAMPLE_FREQ;
 
@@ -336,10 +335,9 @@ int main(void)
     //Mixes the signals
     arm_mat_mult_f32(&A, &s_m, &x_m);
 		
-		//Subtracts the mean from the signal
     float32_t meanX;
     float32_t meanY;
-    //Finds the mean of both columns
+    //Finds the mean of both rows
     for(int t = 0; t < SAMPLE_SIZE; t++){
         meanX += x_array[t];
         meanY += x_array[SAMPLE_SIZE + t];
@@ -348,6 +346,7 @@ int main(void)
     meanX = meanX / SAMPLE_SIZE;
     meanY = meanY / SAMPLE_SIZE;
 		
+		//Subtracts the mean from the signal
 		for(int t = 0; t < SAMPLE_SIZE; t++){
         x_array[t] -= meanX ;
         x_array[SAMPLE_SIZE + t] -= meanY;
@@ -364,19 +363,19 @@ int main(void)
 
     /*****calculating whitening & dewhitening matricesa (whitenv)*****/
     for(int i = 0; i< 4; i++){
-        temp_m_array[i] = sqrt(eigenVal_array[i]);                 	// sqrt(D) 
+        temp_m_array[i] = sqrt(eigenVal_array[i]);                 		// sqrt(D) 
     }
-    arm_mat_mult_f32(&eigenVect_m, &temp_m, &dewhitening_m);     		// dewhitening_m = E * sqrt(D)
+    arm_mat_mult_f32(&eigenVect_m, &temp_m, &dewhitening_m);     			// dewhitening_m = E * sqrt(D)
 		
 		// inverse is not working, doing it manually, which is possible b/c wtn matrix is diagnal
-    arm_mat_inverse_f32(&temp_m, &temp_m2);             // inv(sqrt(D))
+    arm_mat_inverse_f32(&temp_m, &temp_m2);             							// inv(sqrt(D))
 		
-    arm_mat_trans_f32(&eigenVect_m,&eigenVectT_m);                  // E'
+    arm_mat_trans_f32(&eigenVect_m,&eigenVectT_m);                  	// E'
     arm_mat_mult_f32(&temp_m2, &eigenVectT_m, &whitening_m);    			// whitening_m = inv(sqrt(D)) * E'
 
     // Project to the eigenvectors of the covariance matrix.
     // Whiten the samples and reduce dimension simultaneously
-    arm_mat_mult_f32(&whitening_m, &x_m, &whitesig_m);              // whitesig = whiteningMatrix * mixedsig
+    arm_mat_mult_f32(&whitening_m, &x_m, &whitesig_m);             		// whitesig = whiteningMatrix * mixedsig
 
 
     /****FastICA***/
@@ -407,12 +406,12 @@ int main(void)
 
             // Project the vector into the space orthogonal to the space
             // spanned by the earlier found basis vectors.
-            arm_mat_trans_f32(&B_m,&BT_m);                              //B'
-						arm_mat_mult_f32(&B_m, &BT_m, &temp_m);                     //B * B'
-						arm_mat_mult_f32(&temp_m, &w, &temp_v);                     //B * B' * w
-						arm_mat_sub_f32(&w,&temp_v,&temp_w);                             //w = w - B * B' * w
-						w_magn = sqrt(pow(temp_w_array[0],2) + pow(temp_w_array[1],2));  //norm(w) = sqrt(w[1]^2 + w[2]^2)
-						arm_mat_scale_f32(&temp_w, 1/w_magn, &w);                        //w = w/norm(w)
+            arm_mat_trans_f32(&B_m,&BT_m);                              			//B'
+						arm_mat_mult_f32(&B_m, &BT_m, &temp_m);                     			//B * B'
+						arm_mat_mult_f32(&temp_m, &w, &temp_v);                     			//B * B' * w
+						arm_mat_sub_f32(&w,&temp_v,&temp_w);                             	//w = w - B * B' * w
+						w_magn = sqrt(pow(temp_w_array[0],2) + pow(temp_w_array[1],2));  	//norm(w) = sqrt(w[1]^2 + w[2]^2)
+						arm_mat_scale_f32(&temp_w, 1/w_magn, &w);                        	//w = w/norm(w)
 					
 					  arm_mat_sub_f32(&w, &wLast,&diff);       //diff = w - wLast
             arm_mat_add_f32(&w, &wLast,&sum);        //sum  = w + wLast
@@ -444,11 +443,12 @@ int main(void)
             wLast_array[0] = w_array[0];
             wLast_array[1] = w_array[1];
 					
-            // pow3
+            
             // w = (x * ((x' * w) . ^3)) / SAMPLE_SIZE - (3*w)
             arm_mat_trans_f32(&whitesig_m, &xT_m);
             arm_mat_mult_f32(&xT_m, &w, &temp_v_1600);
  
+						// pow3
             for(int j = 0; j < SAMPLE_SIZE; j++){
                 temp_v_1600_array[j] = pow(temp_v_1600_array[j],3);
             }
@@ -472,25 +472,29 @@ int main(void)
         w_array[1] = 0.6;
     }
 		
+		//Generates 32000 samples for playback
 		for(int t = 0; t <= 32000; t++){
         float x = 2 * M_PI * t / SAMPLE_FREQ;
 
-        //Generates the signal and stores in in SRAM
+        //Generates the signal and stores it in QSPI
 				temp_v2_array[0] = arm_sin_f32((float) x*f1);
         threeSig_array[0] = temp_v2_array[0];
 				temp_v2_array[1] = arm_sin_f32((float) x*f2);
 				threeSig_array[1] = temp_v2_array[1];
 				
+				//Computes the mixed signal and stores it in QSPI
 				arm_mat_mult_f32(&A, &temp_v2, &temp_v); 
-			
 				threeSig_array[2] = temp_v_array[0];
 				threeSig_array[3] = temp_v_array[1];
 			
+				//Separates the mixed signal using the matrix computed through fastICA
 				arm_mat_mult_f32(&W, &temp_v, &temp_v2); 
 			
-				//adds back the mean to the signal
+				//adds back the mean to the signal (removed when computing fastICA)
         threeSig_array[4] = temp_v2_array[0] + W_array[0]*meanX + W_array[1]*meanY;
 				threeSig_array[5] = temp_v2_array[1] + W_array[2]*meanX + W_array[3]*meanY;
+			
+				//Writes all signal values to QSPI
 				BSP_QSPI_Write((uint8_t*)&threeSig_array[0], t*0x100, 24);
 
     }
@@ -500,22 +504,33 @@ int main(void)
 		int readSample = 0;
     while (1)
     {
+			//Checks if the button was pressed (raised an interrupt)
 			if(buttonFlag){
 					buttonFlag = 0;
+				
+					//Moves to the next display mode
 					buttonPress++;
 					if(buttonPress > 3)
 						buttonPress = 0;
 				}
+			
+			//If a sample must be read from QSPI
+			//This is not done right before outputting to the DAC in order to speed up the process of outputting the signal
 			if(readSample){
 				BSP_QSPI_Read((uint8_t *)&threeSig_array[0], i*0x100, 24);
 				readSample = 0;
 			}
 				
+			//Checks if the signal must be outputted to the DAC
 			if (systick_flag){
 				systick_flag = 0;
 				readSample = 1;
+				
+				//Writes the signal to the DAC for the first three output modes:
+				//0) Generated signals
+				//1) Mixed signals
+				//2) Separated signals
 				if(buttonPress < 3){
-//						BSP_QSPI_Read((uint8_t *)&threeSig_array[0], i*0x100, 24);
 					HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)(threeSig_array[2*buttonPress]*512 + 763));
 					HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)(threeSig_array[2*buttonPress+1]*512 + 763));
 					if(i == 32000){
@@ -523,6 +538,8 @@ int main(void)
 					}else{
 							i++;
 					}
+				//Last output mode:
+				//3) Outputs 0
 				}else{
 					HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, 0);
 					HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, 0);
@@ -570,7 +587,9 @@ void cov(float32_t *x_array, float32_t *cov_array){
 
 //Takes a 2x2 matrix as input and computes the eigenvalues (stored in A) and eigenvectors (stored in B)
 void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
-    float32_t a = 1;
+    
+		//Finds a, b, and c for the quadratic
+		float32_t a = 1;
     float32_t b = - (pSrcA[0] + pSrcA[3]);
     float32_t det = pSrcA[0] * pSrcA[3] - pSrcA[1] * pSrcA[2];
     float32_t c =  det;
@@ -578,27 +597,25 @@ void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
     float32_t eig2 = 0;
 		float32_t magnitude;
 
+		//Computes the eigenvalues
     if((pow(b, 2) - 4 * a * c) >= 0){
         eig1 = (-b + sqrt(pow(b, 2) - 4 * a * c))/(2*a);
         eig2 = (-b - sqrt(pow(b, 2) - 4 * a * c))/(2*a);
     }
 
+		//Generates the eigenvalue matrix (diagonal)
     pDstA[0] = eig2;
     pDstA[1] = 0;
     pDstA[2] = 0;
     pDstA[3] = eig1;
-
-		// TODO: eigenvector seems wrong, hardcoding it ...
-//		pDstB[0] = 0.7069;
-//    pDstB[1] = -0.7073;
-//    pDstB[2] = -0.7073;
-//    pDstB[3] = -0.7069;
 		
+		//Computes the eigenvectors
 		pDstB[0] = pSrcA[0] - eig1;
     pDstB[1] = pSrcA[3] - eig2 ;
     pDstB[2] = pSrcA[1];
     pDstB[3] = pSrcA[2];
 		
+		//Normalizes the eigenvectors
 		magnitude = sqrt(pow(pDstB[0],2) + pow(pDstB[2],2));
 		pDstB[0] = pDstB[0]/magnitude;
     pDstB[2] = pDstB[2]/magnitude;
@@ -606,9 +623,6 @@ void eig_mat_f32(float32_t *pSrcA, float32_t *pDstA , float32_t *pDstB){
 		magnitude = sqrt(pow(pDstB[1],2) + pow(pDstB[3],2));
 		pDstB[1] = pDstB[1]/magnitude;
     pDstB[3] = pDstB[3]/magnitude;
-		
-    //return 0;
-		
 }
 
 /**
@@ -848,39 +862,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-/**
- * moving average
- */
-
-void sma_c(float *sign, float *signFilt, int N, int D){
-
-    int n;
-    int i;
-    float sum = 0;
-    for(n=0; n<=N; n++){
-        sum = 0;
-        // D/2 before, (D/2)- after
-        if(D%2==0){
-            for(i=(n-D/2); i<=(n+((D/2)-1)); i++){
-                if (i>=0&&i<=N){
-                    sum += sign[i];
-                }
-            }
-        }
-
-        if(D%2!=0){
-            for(i=(n-D/2); i<=(n+((D/2))); i++){
-                if (i>=0&&i<=N){
-                    sum += sign[i];
-                }
-            }
-        }
-        signFilt[n]=sum/D;
-    }
-}
-
-
 /* USER CODE END 4 */
 
 /* StartDefaultTask function */
