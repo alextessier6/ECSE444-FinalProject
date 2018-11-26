@@ -76,6 +76,7 @@ osThreadId defaultTaskHandle;
 float M_PI  = 3.1415926;
 float e = 2.718281828459045235360;
 int systick_flag = 0;
+int buttonFlag = 0;
 int tim3_flag = 0;
 int SAMPLE_SIZE = 1600; //generating samples for only 0.1s
 int SAMPLE_FREQ = 16000;
@@ -123,14 +124,13 @@ int fgetc(FILE *f) {
 float test;
 float test1;
 
-
 float32_t W_array[4] = {0,0,0,0};
 float32_t WT_array[4] = {0,0,0,0};
 float32_t w_array[2] = {0.3, 0.6}; //Initialized to "random value"
-float32_t wLast_array[2] = {0,0};
+float32_t wLast_array[2] = { 0,0};
 float32_t wT_array[2] = {0,0};
-float32_t a_array[4] = {1,2,
-											2,1};
+float32_t a_array[4] = {0.3,0.6,
+											0.97,0.39};
 float32_t adwt_array[4];
 float32_t s_array[3200];
 float32_t x_array[3200];
@@ -454,15 +454,6 @@ int main(void)
         w_array[0] = 0.5;
         w_array[1] = 0.6;
     }
-
-    // arm_mat_trans_f32(&W, &WT);
-
-    // s = WT * x;
-    //for (int t = 0; t < SAMPLE_SIZE; t ++ ){
-        //arm_mat_mult_f32(&W, &x_m, &s_m);
-        // BSP_QSPI_Write((uint8_t *)&s_array[0], t*0x100, 8);
-        //  1 sample from 2 channels in one page
-    //}
 		
 		for(int t = 0; t <= 32000; t++){
         float x = 2 * M_PI * t / SAMPLE_FREQ;
@@ -488,33 +479,37 @@ int main(void)
 
     //Reads the stored samples
     int i = 0;
+		int readSample = 0;
     while (1)
     {
-				if(!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)){
+			if(buttonFlag){
+					buttonFlag = 0;
 					buttonPress++;
-					if(buttonPress > 2)
+					if(buttonPress > 3)
 						buttonPress = 0;
 				}
-//				
-        if (systick_flag){
-				//if(!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)){
-//            float x = 2 * M_PI * i / SAMPLE_FREQ;
-//            s1 = arm_sin_f32((float) x * f1) * 512 + 512;
-//            s2 = arm_sin_f32((float) x * f2) * 512 + 512;
-//            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)s1);
-//            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)s2);
-            systick_flag = 0;
-						BSP_QSPI_Read((uint8_t *)&threeSig_array[0], i*0x100, 24);
-            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)(threeSig_array[2*buttonPress]*512 + 763));
-            HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)(threeSig_array[2*buttonPress+1]*512 + 763));
-            if(i == 32000){
-                i = 0;
-            }else{
-                i++;
-            }
+			if(readSample){
+				BSP_QSPI_Read((uint8_t *)&threeSig_array[0], i*0x100, 24);
+				readSample = 0;
+			}
+				
+			if (systick_flag){
+				systick_flag = 0;
+				readSample = 1;
+				if(buttonPress < 3){
+//						BSP_QSPI_Read((uint8_t *)&threeSig_array[0], i*0x100, 24);
+					HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, (uint32_t)(threeSig_array[2*buttonPress]*512 + 763));
+					HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, (uint32_t)(threeSig_array[2*buttonPress+1]*512 + 763));
+					if(i == 32000){
+							i = 0;
+					}else{
+							i++;
+					}
+				}else{
+					HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, 0);
+					HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, 0);
 				}
-//				HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_1,DAC_ALIGN_12B_R, 0);
-//        HAL_DAC_SetValue(&hdac1,DAC_CHANNEL_2,DAC_ALIGN_12B_R, 0);
+			}
     }
 }
 
@@ -674,7 +669,7 @@ void SystemClock_Config(void)
     HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
     /* SysTick_IRQn interrupt configuration */
-    HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
+    HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
 /* DAC1 init function */
@@ -822,10 +817,14 @@ static void MX_GPIO_Init(void)
 
 	 /*Configure GPIO pin : PC13 */
   GPIO_InitStruct.Pin = GPIO_PIN_13;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  //GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);	
+	
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 	
 
 }
