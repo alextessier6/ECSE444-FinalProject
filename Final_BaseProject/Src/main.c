@@ -335,6 +335,23 @@ int main(void)
 
     //Mixes the signals
     arm_mat_mult_f32(&A, &s_m, &x_m);
+		
+		//Subtracts the mean from the signal
+    float32_t meanX;
+    float32_t meanY;
+    //Finds the mean of both columns
+    for(int t = 0; t < SAMPLE_SIZE; t++){
+        meanX += x_array[t];
+        meanY += x_array[SAMPLE_SIZE + t];
+    }
+
+    meanX = meanX / SAMPLE_SIZE;
+    meanY = meanY / SAMPLE_SIZE;
+		
+		for(int t = 0; t < SAMPLE_SIZE; t++){
+        x_array[t] -= meanX ;
+        x_array[SAMPLE_SIZE + t] -= meanY;
+    }
 
     /*****computing cov and eig (pcamat)*****/
     //Finds the covariance matrix
@@ -471,8 +488,9 @@ int main(void)
 			
 				arm_mat_mult_f32(&W, &temp_v, &temp_v2); 
 			
-        threeSig_array[4] = temp_v2_array[0];
-				threeSig_array[5] = temp_v2_array[1];
+				//adds back the mean to the signal
+        threeSig_array[4] = temp_v2_array[0] + W_array[0]*meanX + W_array[1]*meanY;
+				threeSig_array[5] = temp_v2_array[1] + W_array[2]*meanX + W_array[3]*meanY;
 				BSP_QSPI_Write((uint8_t*)&threeSig_array[0], t*0x100, 24);
 
     }
